@@ -49,19 +49,47 @@ class RecoveryIntelligenceAgent:
     def generate_strategies(self, risk_profile: Dict[str, Any], customer: Dict[str, Any], policy: Dict[str, Any]) -> List[Dict[str, Any]]:
         amount = risk_profile.get("amount_at_risk", 10000)
         
-        # Simulating the generation of various strategies
+        # LIVE AI INFERENCE WITH STRUCTURED OUTPUTS
+        if self.client:
+            try:
+                from pydantic import BaseModel, Field
+                
+                class RecoveryStrategy(BaseModel):
+                    strategy: str = Field(description="Name of the strategy (e.g., Payment link, Immediate retry)")
+                    expected_recovery: float = Field(description="Expected monetary recovery amount")
+                    risk: str = Field(description="Risk level: Low, Medium, or High")
+                    friction: str = Field(description="Customer friction level: Low, Medium, or High")
+                
+                prompt = f"""
+                Analyze this payment failure and generate 4 recovery strategies.
+                Amount at risk: {amount}
+                Risk Profile: {json.dumps(risk_profile)}
+                Customer: {json.dumps(customer)}
+                Return a list of strictly formatted strategies calculating expected recovery mathematically based on friction.
+                """
+                
+                response = self.client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_schema": list[RecoveryStrategy],
+                        "temperature": 0.2
+                    }
+                )
+                # Parse the JSON string back into a Python list of dicts
+                return json.loads(response.text)
+            except Exception as e:
+                print(f"GenAI Structured Output failed, falling back to deterministic: {e}")
+                pass
+
+        # DETERMINISTIC FALLBACK
         return [
             {
                 "strategy": "Immediate retry",
                 "expected_recovery": round(amount * 0.64, 2),
                 "risk": "Low",
                 "friction": "Low"
-            },
-            {
-                "strategy": "Email + link",
-                "expected_recovery": round(amount * 0.73, 2),
-                "risk": "Low",
-                "friction": "Medium"
             },
             {
                 "strategy": "Payment link",
@@ -74,21 +102,41 @@ class RecoveryIntelligenceAgent:
                 "expected_recovery": round(amount * 0.93, 2),
                 "risk": "Medium",
                 "friction": "High"
-            },
-            {
-                "strategy": "Human escalation",
-                "expected_recovery": round(amount * 0.59, 2),
-                "risk": "Low",
-                "friction": "Low"
             }
         ]
 
     def recommend(self, strategies: List[Dict[str, Any]], policy: Dict[str, Any]) -> Dict[str, Any]:
-        # Evaluates the best tradeoff between recovery, risk, and policy
-        # In a real LLM call, the LLM evaluates the tradeoffs and returns this JSON.
+        # LIVE AI INFERENCE
+        if self.client:
+            try:
+                from pydantic import BaseModel
+                class Recommendation(BaseModel):
+                    recommended_strategy: str
+                    expected_recovery: float
+                    reason: str
+                
+                prompt = f"Given these strategies: {json.dumps(strategies)} and this policy: {json.dumps(policy)}, recommend the single best strategy that maximizes recovery while strictly obeying policy."
+                
+                response = self.client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_schema": Recommendation,
+                        "temperature": 0.1
+                    }
+                )
+                return json.loads(response.text)
+            except Exception as e:
+                print(f"GenAI Recommendation failed, falling back: {e}")
+                pass
+                
+        # DETERMINISTIC FALLBACK
+        # Find the strategy named "Payment link" or just take the first low friction one
+        best_strat = next((s for s in strategies if s.get("strategy") == "Payment link"), strategies[0])
         
         return {
-            "recommended_strategy": "Payment link",
-            "expected_recovery": strategies[2]["expected_recovery"], # Corresponds to Payment link
-            "reason": "Voice + UPI has a higher absolute expected recovery, but 'Payment link' achieves a better recovery/friction tradeoff and strictly complies with the current merchant policy limits on customer contact."
+            "recommended_strategy": best_strat.get("strategy"),
+            "expected_recovery": best_strat.get("expected_recovery"),
+            "reason": "Deterministic fallback selected a low friction approach due to missing AI context."
         }
