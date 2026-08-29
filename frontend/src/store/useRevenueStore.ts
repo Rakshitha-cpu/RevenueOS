@@ -1,4 +1,6 @@
-import { create } from 'zustand';
+'use client';
+
+import { useSyncExternalStore } from 'react';
 
 export interface TraceEvent {
   time: string;
@@ -26,7 +28,7 @@ export interface BankDowntimeInfo {
 
 export type ScenarioType = 'BANK_OUTAGE' | 'VIP_RECOVERY' | 'FRAUD_BLOCK';
 
-interface RevenueState {
+export interface RevenueState {
   // Trace Execution State
   visibleEventsCount: number;
   isRunning: boolean;
@@ -81,7 +83,38 @@ const SCENARIO_EVENTS: Record<ScenarioType, TraceEvent[]> = {
   ]
 };
 
-export const useRevenueStore = create<RevenueState>((set, get) => ({
+// =========================================================================
+// Zero-Dependency Enterprise Reactive Store (Built on useSyncExternalStore)
+// Works seamlessly in Next.js 16 without needing external node_modules!
+// =========================================================================
+
+type Listener = () => void;
+
+function createStore<T>(initializer: (set: (partial: Partial<T> | ((state: T) => Partial<T>)) => void, get: () => T) => T) {
+  let state: T;
+  const listeners = new Set<Listener>();
+
+  const get = () => state;
+
+  const set = (partial: Partial<T> | ((state: T) => Partial<T>)) => {
+    const nextState = typeof partial === 'function' ? (partial as any)(state) : partial;
+    state = { ...state, ...nextState };
+    listeners.forEach((listener) => listener());
+  };
+
+  state = initializer(set, get);
+
+  const subscribe = (listener: Listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
+
+  return function useStore(): T {
+    return useSyncExternalStore(subscribe, get, get);
+  };
+}
+
+export const useRevenueStore = createStore<RevenueState>((set, get) => ({
   visibleEventsCount: 0,
   isRunning: false,
   activeScenario: 'BANK_OUTAGE',
