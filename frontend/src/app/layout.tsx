@@ -36,7 +36,7 @@ export default function RootLayout({
               <LayoutDashboard size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">War Room</span>
             </Link>
             <Link href="/batch-evaluation" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
-              <Database size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Batch Proof (50 Txns)</span>
+              <Database size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Recovery Analytics</span>
             </Link>
             <Link href="/customer" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Users size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">Customer Profile</span>

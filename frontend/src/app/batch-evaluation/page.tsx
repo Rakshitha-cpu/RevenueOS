@@ -56,14 +56,14 @@ export default function BatchEvaluationPage() {
           <div className="flex items-center space-x-3 mb-1">
             <h1 className="text-3xl font-black text-slate-900 flex items-center">
               <Database className="mr-3 text-blue-600" size={30} />
-              50-Transaction Batch Evaluation & Verifiable Proof
+              Recovery Performance & Audit Ledger
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-              100% Verifiable Data
+              Verified Production Benchmark
             </span>
           </div>
           <p className="text-slate-500 text-sm">
-            Empirical benchmark run over 50 real-world failed checkout scenarios across HDFC, SBI, ICICI, Axis, and Kotak.
+            Empirical benchmark metrics across 50 failed checkout scenarios across HDFC, SBI, ICICI, Axis, and Kotak.
           </p>
         </div>
 
