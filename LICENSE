@@ -1,21 +1,24 @@
-PROPRIETARY AND CONFIDENTIAL LICENSE
+PROPRIETARY EVALUATION & HACKATHON LICENSE
 
 Copyright (c) 2026 Rakshitha. All Rights Reserved.
 
-NOTICE: This codebase, architecture, and associated documentation (collectively, the "Software") are the proprietary and confidential property of Rakshitha ("Owner").
+NOTICE: This codebase, architecture, and associated documentation (collectively, the "Software") are the intellectual and proprietary property of Rakshitha ("Author").
 
-1. RESTRICTIONS ON USE, COPYING, AND DISTRIBUTION:
-   No permission is granted to any person or entity to:
-   a. Copy, reproduce, clone, scrape, or mirror the Software in whole or in part.
-   b. Modify, translate, adapt, alter, or create derivative works from the Software.
-   c. Distribute, sublicense, publish, lease, sell, or commercially exploit the Software.
-   d. Reverse-engineer, decompile, or extract the algorithms or system architecture for unauthorized commercial or private use.
-   e. Ingest or utilize this Software for training artificial intelligence, neural networks, or automated agents without express written authorization.
+1. AUTHORIZED EVALUATION PERMISSION (RAZORPAY BUILDATHON):
+   Permission is explicitly granted to:
+   a. The Razorpay Buildathon organizing committee, evaluators, judges, and technical staff;
+   b. Automated code evaluation, testing, static analysis, and benchmarking agents (including HiDevs / Dr. Agent Intelligence);
+   c. Authorized reviewers assessing this submission for the Razorpay AI Hackathon.
 
-2. LIMITED EVALUATION PERMISSION:
-   The Software is made publicly visible on GitHub strictly for evaluation, review, and assessment by authorized hackathon judges, interviewers, and technical evaluators. Any other use is strictly prohibited.
+   The aforementioned entities are fully authorized to clone, build, inspect, execute, benchmark, test, and evaluate this Software in whole or in part for judging and assessment purposes.
+
+2. RESTRICTIONS ON UNAUTHORIZED COMMERCIAL USE & THIRD PARTIES:
+   No permission is granted to any unauthorized third party, competitor, or external entity to:
+   a. Copy, clone, redistribute, or mirror this Software for commercial deployment or third-party products.
+   b. Modify, sublicense, publish, lease, sell, or commercially exploit any proprietary algorithm or architecture.
+   c. Use this Software or its architecture to train commercial artificial intelligence or foundation models without express written authorization from the Author.
 
 3. DISCLAIMER OF WARRANTY:
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 
-For licensing inquiries or permission requests, please contact: rakshitharr2196540@gmail.com
+For licensing inquiries, please contact: rakshitharr2196540@gmail.com
