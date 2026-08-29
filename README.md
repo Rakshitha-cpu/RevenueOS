@@ -10,6 +10,7 @@
   [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
   [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
+  [![License](https://img.shields.io/badge/License-Proprietary%20%7C%20All%20Rights%20Reserved-red.svg)](./LICENSE)
 </div>
 
 ---
@@ -139,6 +140,15 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/revenueos
 
 ---
 
+## 🔒 License & Intellectual Property
+
+**Copyright © 2026 Rakshitha. All Rights Reserved.**
+
+This repository and its contents are **Proprietary and Confidential**. No individual or entity is authorized to copy, modify, distribute, publish, or commercially exploit any portion of this software or architecture without prior written permission. Permitted strictly for educational review and authorized hackathon evaluation. See [LICENSE](./LICENSE) for full details.
+
+---
+
 <div align="center">
   <b>Built with ❤️ for the Razorpay Ecosystem.</b>
 </div>
+
