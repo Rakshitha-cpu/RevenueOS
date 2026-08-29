@@ -11,8 +11,11 @@ except ImportError:
 
 class VoiceAgent:
     """
-    Agent #3: Structured Conversational Recovery Assistant (Airtel / GPay style).
-    Deterministic scenario routing, contextual clarifying questions, and multi-turn state.
+    Agent #3: Human-Grade Vigilant Telecaller & Recovery Officer (Priya).
+    Features:
+    - Never acts on blind belief: inspects customer identity, order ID, product, amount.
+    - Probes cancellation reasons (delivery delay, price, hesitation) before taking action.
+    - Seamlessly escalates to Senior Specialist Vikram when human judgement is needed.
     """
     
     def __init__(self):
@@ -26,23 +29,22 @@ class VoiceAgent:
 
     def extract_intent(self, user_utterance: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        Dynamically analyzes customer sentences in the context of the 10 interactive scenarios.
-        Uses exact intent boundaries to avoid cross-scenario collisions.
+        Vigilant telecaller evaluation. Probes customer intent with contextual questions.
         """
         if not user_utterance or not user_utterance.strip():
             return {
                 "intent": "UNKNOWN",
-                "ai_spoken_reply": "I am listening. How may I assist you with your Razorpay transaction today?",
+                "ai_spoken_reply": "Hello Rajesh! I am Priya from Razorpay. How can I assist you regarding your Apple AirPods Pro order today?",
                 "payment_method": None,
                 "requested_date": None,
                 "willingness_to_pay": False,
                 "detected_language": "Unknown",
                 "confidence_score": 0,
                 "sentiment": "Neutral",
-                "recommended_action": "Awaiting customer dialogue"
+                "recommended_action": "Awaiting customer response"
             }
 
-        # Format history string for multi-turn awareness
+        # Format history string
         history_context = ""
         if history and len(history) > 0:
             history_lines = []
@@ -51,41 +53,36 @@ class VoiceAgent:
                 history_lines.append(f"{role}: {item.get('text', '')}")
             history_context = "\nPrevious Conversation History:\n" + "\n".join(history_lines) + "\n"
 
-        # 1. LIVE GEMINI 2.5 FLASH CONVERSATIONAL REASONING
+        # 1. LIVE GEMINI 2.5 FLASH TELECALLER CONVERSATION
         if self.client:
             prompt = f"""
-            You are RevenueOS—an empathetic, highly intelligent conversational recovery agent for Razorpay.
-            The customer is on an active phone call regarding a payment.
+            You are Priya, a human-grade, alert, and courteous customer verification telecaller for Razorpay.
+            You are speaking with customer Rajesh Kumar (+91 98450 XXXXX) regarding his pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650).
+            
             {history_context}
             Customer just said: "{user_utterance}"
 
-            Instructions:
-            1. Generate a natural, helpful 1-2 sentence spoken reply answering the customer in the EXACT SAME LANGUAGE and dialect they spoke.
-               - Split / Installments (e.g. "half now", "split payment", "half next week"): Explain they can pay half (₹2,325) now and balance later. DO NOT confuse with tomorrow schedule!
-               - Card Decline: Explain bank timeout and offer 1-tap UPI.
-               - UPI Request: Ask if they prefer Google Pay or PhonePe.
-               - Tomorrow Schedule: Ask what time tomorrow works best.
-               - Double Debit: Reassure with instant T+0 reversal (<2s) and confirm UTR.
-               - Discounts: Offer 5% cashback discount.
-               - Security/Fraud: Explain 256-bit encryption and offer to verify or freeze.
-               - GST Invoice: Offer to attach company GSTIN.
-               - Store Credit: Offer ₹4,882 store credit voucher (+5% bonus).
-               - Cancellation: Acknowledge cancellation politely and stop future calls.
-            2. Classify intent: "SPLIT_PAYMENT" | "CARD_DECLINE" | "UPI_SWITCH" | "PROMISE_TO_PAY" | "REFUND_REQUEST" | "PRICE_DISCOUNT" | "FRAUD_CHECK" | "GST_INVOICE" | "STORE_CREDIT" | "OPT_OUT" | "GREETING" | "GENERAL_QUERY"
-            3. Rate customer sentiment: "Positive" | "Neutral" | "Technical Complaint" | "Price Sensitive" | "Refusal / Cancellation" | "Frustrated / Refund"
-            4. Calculate an NLU Accuracy Confidence Score (integer 92-99).
-
-            Return ONLY valid JSON:
+            CRITICAL BEHAVIOR RULES:
+            1. NEVER ACT ON BLIND BELIEF. You must inspect and verify details (Order #RZP-8921, Apple AirPods Pro, ₹4,650).
+            2. If the customer asks to CANCEL:
+               - DO NOT immediately cancel blindly!
+               - Politeness and vigilance: Inspect why they want to cancel (Is it delivery delay? Price too high? Found another product?).
+               - Offer a 5% retention discount (SAVE232) or ask if they'd like to talk to a human manager.
+            3. If the customer asks to speak with a human or if you can't satisfy them:
+               - Immediately offer a seamless handoff to Senior Recovery Manager Vikram.
+            4. Speak naturally, empathetically, and conversationally in the EXACT SAME LANGUAGE the customer spoke (English, Kannada, Hindi, etc.).
+            5. Return valid JSON only:
             {{
                 "ai_spoken_reply": string,
-                "intent": string,
+                "intent": "CANCEL_INSPECTION" | "PRICE_RETENTION" | "HUMAN_ESCALATION" | "CARD_DIAGNOSTIC" | "REFUND_INSPECTION" | "SPLIT_INSPECTION" | "VERIFIED_CONFIRMATION" | "GENERAL_QUERY",
                 "detected_language": string,
                 "willingness_to_pay": boolean,
                 "confidence_score": number,
                 "sentiment": string,
                 "payment_method": string or null,
                 "requested_date": string or null,
-                "recommended_action": string
+                "recommended_action": string,
+                "quick_replies": [string]
             }}
             """
             
@@ -97,182 +94,103 @@ class VoiceAgent:
                 raw_text = response.text.replace('```json', '').replace('```', '').strip()
                 return json.loads(raw_text)
             except Exception as e:
-                print(f"LLM conversational extraction error: {e}")
+                print(f"LLM telecaller error: {e}")
 
-        # 2. DETERMINISTIC HIERARCHICAL CLASSIFIER (Ordered to prevent cross-matching)
+        # 2. DETERMINISTIC VIGILANT TELECALLER ENGINE
         t = user_utterance.lower().strip()
 
-        # PRIORITY 1: Split / Partial / Half / Installments (Must come BEFORE tomorrow/schedule!)
-        if re.search(r'\b(half|split|installment|installments|two parts|emi|50%|ಭಾಗ|ಅರ್ಧ|ಆಧಾ)\b', t):
-            is_kn = any(w in t for w in ["ಭಾಗ", "ಅರ್ಧ", "half", "split"])
+        # A. Human Escalation
+        if re.search(r'\b(human|manager|senior|officer|talk to person|person|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी)\b', t):
+            is_kn = any(w in t for w in ["ವಿಕ್ರಮ್", "ಮ್ಯಾನೇಜರ್", "ವ್ಯಕ್ತಿ"])
             return {
-                "ai_spoken_reply": "ಖಂಡಿತ! ನೀವು ಈಗ ಅರ್ಧ ಮೊತ್ತವನ್ನು (₹2,325) ಯುಪಿಐ ಮೂಲಕ ಪಾವತಿಸಿ, ಉಳಿದ ಮೊತ್ತವನ್ನು ಮುಂದಿನ ವಾರ ಪಾವತಿಸಲು ಬಯಸುತ್ತೀರಾ?" if is_kn else "Yes! Would you like to pay half (₹2,325) right now via UPI, and schedule the remaining balance for next week?",
-                "intent": "SPLIT_PAYMENT",
+                "ai_spoken_reply": "ಖಂಡಿತ ರಾಜೇಶ್ ಅವರೇ. ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (₹4,650) ವಿವರಗಳೊಂದಿಗೆ ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ವಿಕ್ರಮ್ ಅವರಿಗೆ ಲೈವ್ ಕಾಲ್ ವರ್ಗಾಯಿಸಲಾಗುತ್ತಿದೆ. ದಯವಿಟ್ಟು 5 ಸೆಕೆಂಡುಗಳು ಹೋಲ್ಡ್‌ನಲ್ಲಿರಿ." if is_kn else "Certainly Rajesh. I am compiling your verified case (Order #RZP-8921, ₹4,650) and transferring you to Senior Manager Vikram right now. Please hold for 5 seconds.",
+                "intent": "HUMAN_ESCALATION",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 99,
+                "sentiment": "Escalated to Human",
+                "payment_method": "Verified Transfer",
+                "requested_date": "Immediate",
+                "recommended_action": "Transferred live call to Senior Manager Vikram at Razorpay Desk",
+                "quick_replies": ["✓ Connected with Vikram", "Keep on Hold"]
+            }
+
+        # B. Cancellation Request (PROBE REASON, NEVER BLIND CANCEL!)
+        if re.search(r'\b(cancel|dont want|don\'t want|stop|not interested|ಕ್ಯಾನ್ಸಲ್|ಬೇಡ|रद्द)\b', t):
+            is_kn = any(w in t for w in ["ಕ್ಯಾನ್ಸಲ್", "ಬೇಡ"])
+            return {
+                "ai_spoken_reply": "ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) ರದ್ದು ಮಾಡುವ ಮುನ್ನ, ನೀವು ಏಕೆ ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲು ಬಯಸುತ್ತಿದ್ದೀರಿ ಎಂದು ತಿಳಿಸಬಹುದೇ: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ ಅಥವಾ ಡೆಲಿವರಿ ತಡವಾಗಿದೆಯೇ?" if is_kn else "Before I authorize cancellation for Order #RZP-8921 (Apple AirPods Pro - ₹4,650), may I inspect why you would like to cancel: is it delivery time, high price, or would you like to speak with a human manager?",
+                "intent": "CANCEL_INSPECTION",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": False,
+                "confidence_score": 98,
+                "sentiment": "Inspecting Cancellation Grounds",
+                "payment_method": None,
+                "requested_date": None,
+                "recommended_action": "Inspecting cancellation grounds & assessing retention options",
+                "quick_replies": ["Found Cheaper Elsewhere", "Delivery Taking Too Long", "Talk to Human Manager", "Confirm Final Cancel"]
+            }
+
+        # C. Price Objection / Discount
+        if re.search(r'\b(cheap|cheaper|expensive|price|discount|offer|ದುಬಾರಿ|ಕಡಿಮೆ|महंगा|सस्ता)\b', t):
+            is_kn = any(w in t for w in ["ದುಬಾರಿ", "ಕಡಿಮೆ", "ಡಿಸ್ಕೌಂಟ್"])
+            return {
+                "ai_spoken_reply": "ಪರಿಶೀಲನೆಯಂತೆ: ನಾನು ತಕ್ಷಣ 5% ಮ್ಯಾನೇಜರ್ ರಿಯಾಯಿತಿ (SAVE232) ಅನ್ವಯಿಸಿ ಒಟ್ಟು ಮೊತ್ತವನ್ನು ₹4,418 ಗೆ ಇಳಿಸಬಹುದು. ಈ ಅಧಿಕೃತ ಲಿಂಕ್ ಕಳುಹಿಸಲೆ?" if is_kn else "I have inspected our merchant authorization: I can apply an official 5% retention discount (SAVE232) reducing your cart from ₹4,650 to ₹4,418. Shall I send this verified link?",
+                "intent": "PRICE_RETENTION",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 98,
+                "sentiment": "Price Objection Inspected",
+                "payment_method": "UPI (with ₹232 Discount)",
+                "requested_date": "Immediate",
+                "recommended_action": "Applied dynamic 5% retention incentive",
+                "quick_replies": ["✓ Accept ₹4,418 Offer", "Still Want to Cancel", "Talk to Manager"]
+            }
+
+        # D. Split Payment
+        if re.search(r'\b(half|split|installment|installments|two parts|emi|ಭಾಗ|ಅರ್ಧ)\b', t):
+            is_kn = any(w in t for w in ["ಭಾಗ", "ಅರ್ಧ", "split"])
+            return {
+                "ai_spoken_reply": "ಅನುಮೋದನೆ ದೊರೆತಿದೆ: ಭಾಗ 1 (₹2,325) ಈಗ ಪಾವತಿಸಿ ಆರ್ಡರ್ ಕಳುಹಿಸಲಾಗುತ್ತದೆ; ಭಾಗ 2 (₹2,325) ಮುಂದಿನ ಸೋಮವಾರ ಪಾವತಿಸಬಹುದು (0% ಬಡ್ಡಿ). ಒಪ್ಪಿಗೆಯೇ?" if is_kn else "Verification Approved: Part 1 of ₹2,325 payable now via UPI to secure dispatch; Part 2 of ₹2,325 scheduled for next Monday with zero interest. Shall I generate this official split link?",
+                "intent": "SPLIT_INSPECTION",
                 "detected_language": "Kannada" if is_kn else "English",
                 "willingness_to_pay": True,
                 "confidence_score": 98,
                 "sentiment": "Positive (Installments)",
                 "payment_method": "UPI Split Link",
-                "requested_date": "Immediate (50%) + Next Week (50%)",
-                "recommended_action": "Generate 2-part split payment link via Razorpay"
+                "requested_date": "Immediate (50%) + Next Monday (50%)",
+                "recommended_action": "Generated authenticated 2-part split payment link",
+                "quick_replies": ["✓ Approve ₹2,325 Split Link", "Check 3-Month EMI"]
             }
 
-        # PRIORITY 2: Explicit Cancellations / Opt-Out
-        if re.search(r'\b(cancel my order|cancel order|cancel it|dont want|don\'t want|not interested|stop calling|refuse|ಬೇಡ|ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ|nahi chahiye|radd karo)\b', t):
-            is_kn = any(w in t for w in ["ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಮಾಡಲ್ಲ"])
+        # E. Verified Confirmation
+        if re.search(r'\b(yes|pay|send|confirm|okay|done|accept|ಆಯ್ತು|ಸರಿ|ಹೌದು|हाँ)\b', t):
+            is_kn = any(w in t for w in ["ಆಯ್ತು", "ಸರಿ", "ಹೌದು"])
             return {
-                "ai_spoken_reply": "ಖಂಡಿತ, ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಈ ಆರ್ಡರ್ ಅನ್ನು ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲಾಗಿದೆ. ನಾವು ಇನ್ನು ಮುಂದೆ ಕರೆ ಮಾಡುವುದಿಲ್ಲ." if is_kn else "We respect your decision. Your order has been cancelled and all future recovery calls have been paused. Have a wonderful day!",
-                "intent": "OPT_OUT",
-                "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": False,
-                "confidence_score": 98,
-                "sentiment": "Refusal / Cancellation",
-                "payment_method": None,
-                "requested_date": None,
-                "recommended_action": "Halt automated outreach immediately. Order cancelled per customer request."
-            }
-
-        # PRIORITY 3: Double-Debit / Instant T+0 Refund
-        if re.search(r'\b(refund|money deducted|double debit|paisa cut|deducted|ರೀಫಂಡ್|ಕಟ್ ಆಗಿದೆ|रिफंड)\b', t):
-            is_kn = any(w in t for w in ["ರೀಫಂಡ್", "ಕಟ್"])
-            return {
-                "ai_spoken_reply": "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಬ್ಯಾಂಕ್ ಖಾತೆಗೆ 2.1 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ₹4,650 ರಿಫಂಡ್ ಜಮೆ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ." if is_kn else "Don't worry! We are issuing an instant T+0 reversal of ₹4,650 to your bank account in 2.1 seconds. Your UTR has been sent to WhatsApp.",
-                "intent": "REFUND_REQUEST",
-                "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": False,
-                "confidence_score": 98,
-                "sentiment": "Frustrated / Refund",
-                "payment_method": "UPI_INSTANT_REVERSAL",
-                "requested_date": "Immediate",
-                "recommended_action": "Execute T+0 Instant Refund via Razorpay and deliver UTR"
-            }
-
-        # PRIORITY 4: Discounts & Offers
-        if re.search(r'\b(cheap|discount|cashback|offer|coupon|promo|price|ಡಿಸ್ಕೌಂಟ್|ಆಫರ್)\b', t):
-            is_kn = any(w in t for w in ["ಡಿಸ್ಕೌಂಟ್", "ಆಫರ್"])
-            return {
-                "ai_spoken_reply": "ಇಂದು 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪಾವತಿಗೆ 5% ಕ್ಯಾಶ್‌ಬ್ಯಾಕ್ ಆಫರ್ ಲಭ್ಯವಿದೆ. ನಿಮ್ಮ ಪಾವತಿ ಲಿಂಕ್‌ಗೆ SAVE5 ಕೂಪನ್ ಅನ್ವಯಿಸಬೇಕೆ?" if is_kn else "We have an instant 5% cashback discount available on 1-Tap UPI payments today. Would you like me to apply promo code SAVE5 to your payment link?",
-                "intent": "PRICE_DISCOUNT",
+                "ai_spoken_reply": "ಧನ್ಯವಾದಗಳು ರಾಜೇಶ್ ಅವರೇ! ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗಿದೆ. ಅಧಿಕೃತ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪಾವತಿ ಲಿಂಕ್ ಅನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್ (+91 98450 XXXXX) ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ." if is_kn else "Thank you Rajesh! Order #RZP-8921 parameters verified. The official 1-Tap UPI payment link has been delivered to your WhatsApp (+91 98450 XXXXX).",
+                "intent": "VERIFIED_CONFIRMATION",
                 "detected_language": "Kannada" if is_kn else "English",
                 "willingness_to_pay": True,
-                "confidence_score": 96,
-                "sentiment": "Price Sensitive",
-                "payment_method": "UPI (with 5% Discount)",
+                "confidence_score": 99,
+                "sentiment": "Positive / Verified",
+                "payment_method": "UPI Intent",
                 "requested_date": "Immediate",
-                "recommended_action": "Apply dynamic 5% UPI discount and send checkout link"
+                "recommended_action": "Delivered authenticated 1-Tap UPI deep link",
+                "quick_replies": ["✓ Open WhatsApp Link", "Send SMS Copy"]
             }
 
-        # PRIORITY 5: Card Decline / Timeout
-        if re.search(r'\b(card.*failed|card.*not working|card decline|declined|server down|bank timeout|ಕಾರ್ಡ್.*ಆಗ್ತಿಲ್ಲ|ಕಾರ್ಡ್ ವರ್ಕ್)\b', t):
-            is_kn = any(w in t for w in ["ಕಾರ್ಡ್", "ಆಗ್ತಿಲ್ಲ", "ವರ್ಕ್"])
-            return {
-                "ai_spoken_reply": "ಬ್ಯಾಂಕ್ ಸರ್ವರ್ ಸಮಸ್ಯೆಯಿಂದ ಕಾರ್ಡ್ ಪಾವತಿ ವಿಫಲವಾಗಿದೆ. ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲೆ ಅಥವಾ 10 ನಿಮಿಷಗಳ ನಂತರ ಮರುಪ್ರಯತ್ನಿಸುತ್ತೀರಾ?" if is_kn else "We noticed a temporary bank gateway timeout on your card. Would you prefer an instant 1-tap UPI link on WhatsApp, or would you like to retry your card in 10 minutes?",
-                "intent": "CARD_DECLINE",
-                "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": True,
-                "confidence_score": 98,
-                "sentiment": "Technical Complaint",
-                "payment_method": "UPI (Google Pay / PhonePe)",
-                "requested_date": "Immediate",
-                "recommended_action": "Offer smart UPI auto-reroute to bypass bank downtime"
-            }
-
-        # PRIORITY 6: Switch to 1-Tap UPI
-        if re.search(r'\b(gpay|google pay|phonepe|paytm|switch to upi|send upi|ಯುಪಿಐ|ಜಿಪೇ|ಫೋನ್‌ಪೇ)\b', t):
-            is_kn = any(w in t for w in ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "ಕಳಿಸಿ"])
-            return {
-                "ai_spoken_reply": "ಖಂಡಿತ! ನೀವು ಯಾವ ಆ್ಯಪ್ ಬಳಸುತ್ತೀರಿ: Google Pay, PhonePe ಅಥವಾ Paytm? ಇವಾಗ್ಲೇ ವಾಟ್ಸಾಪ್‌ಗೆ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ." if is_kn else "Sure! Which UPI app do you prefer: Google Pay, PhonePe, or Paytm? We can send the 1-tap link directly to your WhatsApp.",
-                "intent": "UPI_SWITCH",
-                "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": True,
-                "confidence_score": 98,
-                "sentiment": "Positive (Prefers UPI)",
-                "payment_method": "UPI (Google Pay / PhonePe)",
-                "requested_date": "Immediate",
-                "recommended_action": "Generate instant 1-Tap UPI deep link via Razorpay"
-            }
-
-        # PRIORITY 7: Schedule Tomorrow
-        if re.search(r'\b(tomorrow|schedule|morning|evening|will pay tomorrow|ನಾಳೆ|ಬೆಳಗ್ಗೆ|ಸಂಜೆ|kal)\b', t):
-            is_kn = any(w in t for w in ["ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "ಸಂಜೆ"])
-            return {
-                "ai_spoken_reply": "ಖಂಡಿತ! ನಾಳೆ ಯಾವ ಸಮಯ ನಿಮಗೆ ಅನುಕೂಲಕರ: ಬೆಳಗ್ಗೆ 9:00 ಗಂಟೆಗೆ ಅಥವಾ ಮಧ್ಯಾಹ್ನ 11:30 ಕ್ಕೆ?" if is_kn else "Understood! What time tomorrow works best for you: 9:00 AM or 11:30 AM before banking hours?",
-                "intent": "PROMISE_TO_PAY",
-                "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": True,
-                "confidence_score": 97,
-                "sentiment": "Positive (Promise to Pay)",
-                "payment_method": "UPI",
-                "requested_date": "Tomorrow morning",
-                "recommended_action": "Schedule 1-Tap UPI WhatsApp Payment Link for customer window"
-            }
-
-        # PRIORITY 8: Fraud & Security
-        if re.search(r'\b(fraud|unauthorized|stolen|security|suspicious|safe|ಸುರಕ್ಷಿತ)\b', t):
-            return {
-                "ai_spoken_reply": "Security is our highest priority. Did you attempt this ₹4,650 transaction at 10:14 PM, or should we immediately freeze this transaction and escalate to our fraud desk?",
-                "intent": "FRAUD_CHECK",
-                "detected_language": "English",
-                "willingness_to_pay": False,
-                "confidence_score": 97,
-                "sentiment": "Suspicious / Security",
-                "payment_method": None,
-                "requested_date": "Immediate",
-                "recommended_action": "Freeze transaction and trigger instant War Room compliance audit"
-            }
-
-        # PRIORITY 9: Corporate GST Invoice
-        if re.search(r'\b(gst|invoice|b2b|tax invoice|company|business|ಜಿಎಸ್‌ಟಿ|ಇನ್‌ವಾಯ್ಸ್)\b', t):
-            return {
-                "ai_spoken_reply": "Certainly! Would you like a B2B tax invoice generated with your company GSTIN upon payment completion?",
-                "intent": "GST_INVOICE",
-                "detected_language": "English",
-                "willingness_to_pay": True,
-                "confidence_score": 97,
-                "sentiment": "Positive (Corporate)",
-                "payment_method": "Netbanking / Corporate Card",
-                "requested_date": "Immediate",
-                "recommended_action": "Attach automated GSTIN tax invoice generator to payment receipt"
-            }
-
-        # PRIORITY 10: Store Credit Boost
-        if re.search(r'\b(store credit|voucher|wallet|perk|bonus|goodwill|ವೋಚರ್)\b', t):
-            return {
-                "ai_spoken_reply": "Instead of waiting for bank settlement, would you like an instant ₹4,882 store credit voucher (including a 5% bonus) to complete your order immediately?",
-                "intent": "STORE_CREDIT",
-                "detected_language": "English",
-                "willingness_to_pay": True,
-                "confidence_score": 98,
-                "sentiment": "Positive (Store Credit)",
-                "payment_method": "Store Credit",
-                "requested_date": "Immediate",
-                "recommended_action": "Issue instant 5% goodwill store credit voucher"
-            }
-
-        # Greetings
-        if re.search(r'\b(hi|hello|hey|how are you|namaste|namaskara)\b', t):
-            return {
-                "ai_spoken_reply": "Hello! I am doing well, thank you. I am calling from Razorpay regarding your recent transaction. How can I assist you today?",
-                "intent": "GREETING",
-                "detected_language": "English",
-                "willingness_to_pay": True,
-                "confidence_score": 98,
-                "sentiment": "Neutral",
-                "payment_method": "UPI",
-                "requested_date": "Immediate",
-                "recommended_action": "Greeted customer and opened recovery dialogue"
-            }
-
+        # Default Telecaller Inspection
         return {
-            "ai_spoken_reply": "Thank you for sharing that. I have noted your details and our team is assisting you with completing your transaction.",
-            "intent": "GENERAL_QUERY",
+            "ai_spoken_reply": "I am inspecting that for you right now regarding Order #RZP-8921 (Apple AirPods Pro - ₹4,650). How would you prefer to proceed?",
+            "intent": "INSPECTION_QUERY",
             "detected_language": "English",
             "willingness_to_pay": True,
-            "confidence_score": 94,
-            "sentiment": "Engaged Customer",
-            "payment_method": "UPI",
+            "confidence_score": 96,
+            "sentiment": "Attentive",
+            "payment_method": "Verified UPI / Card",
             "requested_date": "Immediate",
-            "recommended_action": "Logged conversation and assigned priority recovery strategy"
+            "recommended_action": "Inspected account details and awaiting customer preference",
+            "quick_replies": ["Verify Card Details", "Switch to UPI", "Transfer to Human"]
         }
 
 voice_agent = VoiceAgent()
