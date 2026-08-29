@@ -107,7 +107,7 @@ export default function VoiceRecovery() {
   const recognitionRef = useRef<any>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Switch Language & Reset Call cleanly with zero phantom messages
+  // Switch Language & Reset Call cleanly
   const handleLanguageChange = (lang: LanguageOption) => {
     setSelectedLang(lang);
     if (recognitionRef.current) {
@@ -118,7 +118,6 @@ export default function VoiceRecovery() {
     setParsedIntent(null);
     setShowWhatsAppPopup(false);
 
-    // Set exactly 1 opening greeting in the selected language
     setConversationHistory([
       {
         id: `msg-${Date.now()}`,
@@ -228,8 +227,6 @@ export default function VoiceRecovery() {
     }
 
     const textToProcess = currentSpokenText.trim();
-    
-    // If user said nothing, DO NOT create an AI response!
     if (!textToProcess || textToProcess.length < 2) {
       setCurrentSpokenText("");
       setCallState('IDLE');
@@ -249,7 +246,6 @@ export default function VoiceRecovery() {
     setConversationHistory(updatedHistory);
     setCurrentSpokenText("");
     
-    // Trigger AI analysis sequentially
     processTurn(textToProcess, updatedHistory);
   };
 
@@ -275,7 +271,7 @@ export default function VoiceRecovery() {
     processTurn(textToProcess, updatedHistory);
   };
 
-  // Step 4: Sample Prompt trigger (Always creates Customer turn first!)
+  // Step 4: Sample Prompt trigger
   const handleSamplePromptClick = () => {
     if (callState !== 'IDLE') return;
 
@@ -319,15 +315,70 @@ export default function VoiceRecovery() {
         console.warn("Backend offline, using local engine.");
       }
 
-      // Exact language fallback if backend returned offline/general
+      // Exact client-side regex engine (Eliminates false substring cancellations!)
       if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
-        const t = text.toLowerCase();
-        const isRefusal = ["cancel", "don't want", "no", "stop", "never", "not interested", "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "nahi"].some(k => t.includes(k));
-        const isUPI = ["upi", "gpay", "phonepe", "link", "qr", "google pay", "paytm", "ಯುಪಿಐ", "ಜಿಪೇ"].some(k => t.includes(k));
-        const isPromise = ["tomorrow", "later", "morning", "evening", "next week", "will pay", "pay tomorrow", "ನಾಳೆ", "kal"].some(k => t.includes(k));
-        const isRefund = ["refund", "deducted", "cut", "money deducted", "ರೀಫಂಡ್", "रिफंड"].some(k => t.includes(k));
+        const t = text.toLowerCase().trim();
 
-        if (isRefusal) {
+        // 1. Greetings
+        if (/\b(hi|hello|hey|how are you|good morning|good evening|namaste|vanakkam|namaskara)\b/i.test(t)) {
+          intentData = {
+            intent: "GREETING",
+            sentiment: "Neutral",
+            confidence_score: 98,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN' 
+              ? "ನಮಸ್ಕಾರ! ನಾನು ಆರಾಮಾಗಿದ್ದೇನೆ. ನಿಮ್ಮ Razorpay ಪಾವತಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
+              : selectedLang.code === 'hi-IN'
+                ? "नमस्ते! मैं ठीक हूँ, धन्यवाद। आपकी Razorpay पेमेंट पूरा करने में हम आपकी कैसे मदद कर सकते हैं?"
+                : "Hello! I am doing well, thank you. I am calling from Razorpay regarding your recent transaction. How can I assist you today?",
+            recommended_action: "Greet customer and open recovery options"
+          };
+        }
+        // 2. Technical issues & Card failures (Must NEVER cancel order!)
+        else if (/\b(why.*card|card.*not working|card failed|card decline|declined|otp|server down|transaction failed|bank timeout|failed)\b/i.test(t)) {
+          intentData = {
+            intent: "TECHNICAL_ISSUE",
+            sentiment: "Technical Complaint",
+            confidence_score: 97,
+            willingness_to_pay: true,
+            payment_method: "UPI (Google Pay / PhonePe)",
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಬ್ಯಾಂಕ್ ಸರ್ವರ್ ಸಮಸ್ಯೆಯಿಂದ ಕಾರ್ಡ್ ಪಾವತಿ ವಿಫಲವಾಗಿರಬಹುದು. ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲೆ?"
+              : selectedLang.code === 'hi-IN'
+                ? "बैंक सर्वर डाउन होने के कारण कार्ड डिक्लाइन हो सकता है। क्या मैं आपके व्हाट्सएप पर 1-टैप यूपीआई लिंक भेज दूँ?"
+                : "Card declines usually happen due to temporary bank server downtime or OTP limits. Would you like me to send a fast 1-tap UPI link to your WhatsApp instead?",
+            recommended_action: "Provide downtime diagnostics and offer instant 1-Tap UPI switch"
+          };
+        }
+        // 3. Price / Discounts / Cheap queries
+        else if (/\b(cheap|price|discount|offer|coupon|cost|cheaper|rates)\b/i.test(t)) {
+          intentData = {
+            intent: "PRICE_INQUIRY",
+            sentiment: "Price Sensitive",
+            confidence_score: 95,
+            willingness_to_pay: true,
+            payment_method: "UPI",
+            ai_spoken_reply: "We offer instant cashback and bank discount offers when paying via 1-Tap UPI. Would you like me to send your discount payment link on WhatsApp?",
+            recommended_action: "Apply dynamic UPI discount incentive and send recovery link"
+          };
+        }
+        // 4. Refund requests
+        else if (/\b(refund|money deducted|paisa cut|deducted|ರೀಫಂಡ್|ಕಟ್ ಆಗಿದೆ|रिफंड)\b/i.test(t)) {
+          intentData = {
+            intent: "REFUND_REQUEST",
+            sentiment: "Frustrated / Refund",
+            confidence_score: 97,
+            willingness_to_pay: false,
+            ai_spoken_reply: selectedLang.code === 'en-IN' 
+              ? "Don't worry! We are issuing an instant T+0 reversal to your bank account right now. Your UTR has been sent to WhatsApp." 
+              : selectedLang.code === 'kn-IN'
+                ? "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."
+                : "चिंता न करें! आपका रिफंड तुरंत आपके बैंक खाते में भेजा जा रहा है।",
+            recommended_action: "Initiate T+0 Instant Refund via Razorpay API"
+          };
+        }
+        // 5. Explicit Cancellations ONLY (Strict whole-phrase matching)
+        else if (/\b(cancel my order|cancel order|cancel it|dont want|don't want|not interested|stop calling|refuse|ಬೇಡ|ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ|nahi chahiye|radd karo)\b/i.test(t)) {
           intentData = {
             intent: "OPT_OUT",
             sentiment: "Refusal / Cancellation",
@@ -336,33 +387,24 @@ export default function VoiceRecovery() {
             ai_spoken_reply: selectedLang.ttsCancelResponse,
             recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
           };
-        } else if (isRefund) {
-          intentData = {
-            intent: "REFUND_REQUEST",
-            sentiment: "Frustrated / Refund",
-            confidence_score: 97,
-            willingness_to_pay: false,
-            ai_spoken_reply: selectedLang.code === 'en-IN' 
-              ? "Don't worry! We are issuing an instant T+0 reversal to your bank account right now. The UTR number has been sent to your WhatsApp." 
-              : selectedLang.code === 'kn-IN'
-                ? "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."
-                : "चिंता न करें! आपका रिफंड तुरंत आपके बैंक खाते में भेजा जा रहा है।",
-            recommended_action: "Execute T+0 Instant Refund via Razorpay API"
-          };
-        } else if (isUPI) {
+        }
+        // 6. Alternative UPI method
+        else if (/\b(upi|gpay|phonepe|paytm|link|whatsapp link|qr|google pay|ಯುಪಿಐ|ಜಿಪೇ|ಫೋನ್‌ಪೇ|यूपीआई)\b/i.test(t)) {
           intentData = {
             intent: "ALTERNATIVE_METHOD",
             sentiment: "Positive (Prefers UPI)",
             confidence_score: 96,
             willingness_to_pay: true,
             ai_spoken_reply: selectedLang.code === 'en-IN'
-              ? "Sure! We are sending an instant 1-tap UPI payment link to your WhatsApp right now."
+              ? "Sure! We are sending an instant 1-tap UPI payment link directly to your WhatsApp right now."
               : selectedLang.code === 'kn-IN'
                 ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ."
                 : "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।",
-            recommended_action: "Generate instant 1-Tap UPI deep link"
+            recommended_action: "Generate instant 1-Tap UPI deep link via Razorpay"
           };
-        } else if (isPromise) {
+        }
+        // 7. Promise to pay later
+        else if (/\b(tomorrow|later|morning|evening|next week|will pay|pay tomorrow|ನಾಳೆ|ಮಾಡ್ತೀನಿ|kal|kar dunga)\b/i.test(t)) {
           intentData = {
             intent: "PROMISE_TO_PAY",
             sentiment: "Positive (Promise to Pay)",
@@ -371,14 +413,16 @@ export default function VoiceRecovery() {
             ai_spoken_reply: selectedLang.ttsPromiseResponse,
             recommended_action: "Schedule 1-Tap UPI WhatsApp Payment Link for tomorrow"
           };
-        } else {
+        }
+        // 8. General conversational fallback
+        else {
           intentData = {
             intent: "GENERAL_QUERY",
             sentiment: "Engaged Customer",
-            confidence_score: 95,
+            confidence_score: 94,
             willingness_to_pay: true,
             ai_spoken_reply: selectedLang.code === 'en-IN'
-              ? "Thank you for the update. We have noted your details and our team is assisting you right away."
+              ? "Thank you for sharing that. I have noted your details and our team is assisting you with completing your transaction."
               : selectedLang.code === 'kn-IN'
                 ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ."
                 : "धन्यवाद. हमने आपका अनुरोध नोट कर लिया है।",
@@ -390,9 +434,9 @@ export default function VoiceRecovery() {
       const aiReplyText = intentData.ai_spoken_reply || selectedLang.ttsPromiseResponse;
 
       // Update structured state
-      const isCancellation = intentData.intent === "OPT_OUT" || !intentData.willingness_to_pay;
+      const isCancellation = intentData.intent === "OPT_OUT";
       setParsedIntent({
-        intent: intentData.intent || "PROMISE_TO_PAY",
+        intent: intentData.intent || "GENERAL_QUERY",
         language: selectedLang.name,
         sentiment: intentData.sentiment || "Positive",
         confidence: intentData.confidence_score || 96,
@@ -402,7 +446,7 @@ export default function VoiceRecovery() {
         action: intentData.recommended_action || "Autonomous Strategy Updated"
       });
 
-      if (!isCancellation && intentData.intent !== 'REFUND_REQUEST') {
+      if (!isCancellation && intentData.intent !== 'REFUND_REQUEST' && intentData.intent !== 'GREETING') {
         setShowWhatsAppPopup(true);
       } else {
         setShowWhatsAppPopup(false);
@@ -570,7 +614,7 @@ export default function VoiceRecovery() {
             {callState === 'ANALYZING' && (
               <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
                 <Activity size={16} className="animate-spin" />
-                <span>AI Agent analyzing in {selectedLang.name}...</span>
+                <span>AI Agent understanding your dialogue...</span>
               </div>
             )}
 
