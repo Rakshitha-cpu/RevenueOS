@@ -4,16 +4,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Mic, MicOff, Activity, ShieldCheck, Languages, ArrowRight, Zap, Play, Send, 
   Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, 
-  Sparkles, Gauge, Trash2, CheckCircle2, User, Bot, RotateCcw
+  Sparkles, Gauge, Trash2, CheckCircle2, User, Bot, RotateCcw, CreditCard, Smartphone,
+  Calendar, RefreshCw, Percent, ShieldAlert, Split, FileText, Gift, Ban
 } from 'lucide-react';
 
 interface LanguageOption {
   code: string;
   name: string;
   nativeName: string;
-  samplePhrase: string;
   initialGreeting: string;
-  ttsPromiseResponse: string;
   ttsCancelResponse: string;
 }
 
@@ -26,61 +25,71 @@ interface MessageTurn {
   intent?: string;
 }
 
+interface QuickScenario {
+  id: string;
+  title: string;
+  prompt: string;
+  icon: any;
+  color: string;
+}
+
 const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { 
     code: 'en-IN', 
     name: 'English', 
     nativeName: 'English', 
-    samplePhrase: 'My card failed. Can you send a 1-tap UPI payment link on WhatsApp?',
     initialGreeting: 'Hello! This is an automated call from Razorpay. How can we assist you with completing your transaction today?',
-    ttsPromiseResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.',
     ttsCancelResponse: 'Understood. We have cancelled your order as requested and stopped all automated outreach.'
   },
   { 
     code: 'kn-IN', 
     name: 'Kannada', 
     nativeName: 'ಕನ್ನಡ', 
-    samplePhrase: 'ನನ್ನ ಕಾರ್ಡ್ ವರ್ಕ್ ಆಗ್ತಿಲ್ಲ, ನಾಳೆ ಗೂಗಲ್ ಪೇ ಮಾಡ್ತೀನಿ',
     initialGreeting: 'ನಮಸ್ಕಾರ! Razorpay ನಿಂದ ಕರೆ ಮಾಡುತ್ತಿದ್ದೇವೆ. ನಿಮ್ಮ ಪಾವತಿ ಪೂರ್ಣಗೊಳಿಸಲು ನಾವು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?',
-    ttsPromiseResponse: 'ಧನ್ಯವಾದಗಳು! ನಾಳೆ ಬೆಳಗ್ಗೆ ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.',
     ttsCancelResponse: 'ಖಂಡಿತ, ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಈ ಆರ್ಡರ್ ಅನ್ನು ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲಾಗಿದೆ. ನಾವು ಇನ್ನು ಮುಂದೆ ಕರೆ ಮಾಡುವುದಿಲ್ಲ.'
   },
   { 
     code: 'hi-IN', 
     name: 'Hindi', 
     nativeName: 'हिंदी', 
-    samplePhrase: 'मेरा कार्ड काम नहीं कर रहा, मैं कल सुबह यूपीआई से पेमेंट कर दूंगा',
     initialGreeting: 'नमस्ते! Razorpay से कॉल कर रहे हैं। आपके पेमेंट को पूरा करने में हम आपकी किस प्रकार सहायता कर सकते हैं?',
-    ttsPromiseResponse: 'धन्यवाद! हम कल सुबह आपके व्हाट्सएप पर 1-टैप यूपीआई पेमेंट लिंक भेज देंगे।',
     ttsCancelResponse: 'जी बिल्कुल, आपके अनुरोध के अनुसार हमने आपका ऑर्डर रद्द कर दिया है। हम आगे से संपर्क नहीं करेंगे।'
   },
   { 
     code: 'ta-IN', 
     name: 'Tamil', 
     nativeName: 'தமிழ்', 
-    samplePhrase: 'கார்டு வேலை செய்யவில்லை, நாளைக்கு ஜிபே மூலமா பணம் கட்டுகிறேன்',
     initialGreeting: 'வணக்கம்! Razorpay இலிருந்து அழைக்கிறோம். உங்கள் கட்டணத்தை முடிக்க நாங்கள் எவ்வாறு உதவலாம்?',
-    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிಐ கட்டண இணைப்பை அனுப்புகிறோம்.',
     ttsCancelResponse: 'சரி, உங்கள் கோரிக்கையின்படி ஆர்டர் ரத்து செய்யப்பட்டது.'
   },
   { 
     code: 'te-IN', 
     name: 'Telugu', 
     nativeName: 'తెలుగు', 
-    samplePhrase: 'కార్డు పని చేయడం లేదు, రేపు పొద్దున ఫోన్‌పే ద్వారా చెల్లిస్తాను',
     initialGreeting: 'నమస్కారం! Razorpay నుండి కాల్ చేస్తున్నాము. మీ చెల్లింపు పూర్తి చేయడానికి మేము ఎలా సహాయపడగలము?',
-    ttsPromiseResponse: 'ధన్యవాదాలు! రేపు ఉదయం మీకు వాట్సాప్‌లో యూపీఐ పేమెంట్ లింక్ పంపుతాము.',
     ttsCancelResponse: 'సరే, మీ అభ్యర్థన మేరకు ఆర్డర్ రద్దు చేయబడింది.'
   },
   { 
     code: 'ml-IN', 
     name: 'Malayalam', 
     nativeName: 'മലയാളം', 
-    samplePhrase: 'കാർഡ് വർക്കാവുന്നില്ല, നാളെ രാവിലെ ഗൂഗിൾ പേ വഴി തരാം',
     initialGreeting: 'നമസ്കാരം! Razorpay-ൽ നിന്നാണ് വിളിക്കുന്നത്. നിങ്ങളുടെ പേയ്‌മെന്റ് പൂർത്തിയാക്കാൻ ഞങ്ങൾക്ക് എങ്ങനെ സഹായിക്കാനാകും?',
-    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
     ttsCancelResponse: 'ശരി, നിങ്ങളുടെ അഭ്യർത്ഥന പ്രകാരം ഓർഡർ റദ്ദാക്കി.'
   }
+];
+
+// 10 Unique Interactive Conversation Scenarios
+const QUICK_SCENARIOS: QuickScenario[] = [
+  { id: '1', title: '1. Card Declined', prompt: 'Why was my card declined during checkout?', icon: CreditCard, color: 'text-red-400 border-red-900/40 bg-red-950/30' },
+  { id: '2', title: '2. Switch to UPI', prompt: 'Can you send a 1-tap Google Pay / PhonePe link to my WhatsApp?', icon: Smartphone, color: 'text-blue-400 border-blue-900/40 bg-blue-950/30' },
+  { id: '3', title: '3. Schedule Tomorrow', prompt: 'Can I schedule this payment for tomorrow morning at 10 AM?', icon: Calendar, color: 'text-amber-400 border-amber-900/40 bg-amber-950/30' },
+  { id: '4', title: '4. Refund Double-Debit', prompt: 'Money was debited from my bank account but order failed. Please refund it.', icon: RefreshCw, color: 'text-emerald-400 border-emerald-900/40 bg-emerald-950/30' },
+  { id: '5', title: '5. Discounts & Offers', prompt: 'Are there any cashback or discount offers available on UPI?', icon: Percent, color: 'text-purple-400 border-purple-900/40 bg-purple-950/30' },
+  { id: '6', title: '6. Security & Fraud Check', prompt: 'Is this transaction safe? I want to verify the payment details before paying.', icon: ShieldAlert, color: 'text-cyan-400 border-cyan-900/40 bg-cyan-950/30' },
+  { id: '7', title: '7. Split / Installment', prompt: 'Can I pay half now and the remaining balance next week?', icon: Split, color: 'text-indigo-400 border-indigo-900/40 bg-indigo-950/30' },
+  { id: '8', title: '8. Corporate GST Invoice', prompt: 'Can you generate a B2B GST tax invoice for my company with this payment?', icon: FileText, color: 'text-teal-400 border-teal-900/40 bg-teal-950/30' },
+  { id: '9', title: '9. 5% Store Credit Boost', prompt: 'Can I convert this into store credit with a 5% bonus perk?', icon: Gift, color: 'text-pink-400 border-pink-900/40 bg-pink-950/30' },
+  { id: '10', title: '10. Cancel Order (Opt-Out)', prompt: 'I want to cancel my order and stop all future payment calls.', icon: Ban, color: 'text-rose-400 border-rose-900/40 bg-rose-950/30' }
 ];
 
 export default function VoiceRecovery() {
@@ -175,7 +184,7 @@ export default function VoiceRecovery() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Step 1: Start User Speaking (Calm, no rush)
+  // Step 1: Start User Speaking
   const startListening = () => {
     setRecognitionError(null);
     setCurrentSpokenText("");
@@ -233,7 +242,6 @@ export default function VoiceRecovery() {
       return;
     }
 
-    // Append Customer message to history
     const customerMsg: MessageTurn = {
       id: `cust-${Date.now()}`,
       role: 'customer',
@@ -271,22 +279,22 @@ export default function VoiceRecovery() {
     processTurn(textToProcess, updatedHistory);
   };
 
-  // Step 4: Sample Prompt trigger
-  const handleSamplePromptClick = () => {
+  // Step 4: Click one of the 10 Unique Scenarios
+  const handleScenarioClick = (scenario: QuickScenario) => {
     if (callState !== 'IDLE') return;
 
-    const sample = selectedLang.samplePhrase;
+    const promptText = scenario.prompt;
     const customerMsg: MessageTurn = {
       id: `cust-${Date.now()}`,
       role: 'customer',
-      text: sample,
+      text: promptText,
       timestamp: formatCallTime(callDuration),
       lang: selectedLang.name
     };
 
     const updatedHistory = [...conversationHistory, customerMsg];
     setConversationHistory(updatedHistory);
-    processTurn(sample, updatedHistory);
+    processTurn(promptText, updatedHistory);
   };
 
   // Step 5: Multi-Turn Intent & Sequential Response Generation
@@ -312,126 +320,149 @@ export default function VoiceRecovery() {
           intentData = data.extracted_data;
         }
       } catch (e) {
-        console.warn("Backend offline, using local engine.");
+        console.warn("Backend offline, using local scenario engine.");
       }
 
-      // Exact client-side regex engine (Eliminates false substring cancellations!)
+      // Local 10-Scenario fallback if backend returned offline
       if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
         const t = text.toLowerCase().trim();
 
-        // 1. Greetings
-        if (/\b(hi|hello|hey|how are you|good morning|good evening|namaste|vanakkam|namaskara)\b/i.test(t)) {
+        // 1. Card Decline
+        if (/\b(card.*failed|card.*not working|card decline|declined|server down|bank timeout|ಕಾರ್ಡ್.*ಆಗ್ತಿಲ್ಲ)\b/i.test(t)) {
           intentData = {
-            intent: "GREETING",
-            sentiment: "Neutral",
-            confidence_score: 98,
-            willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.code === 'kn-IN' 
-              ? "ನಮಸ್ಕಾರ! ನಾನು ಆರಾಮಾಗಿದ್ದೇನೆ. ನಿಮ್ಮ Razorpay ಪಾವತಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
-              : selectedLang.code === 'hi-IN'
-                ? "नमस्ते! मैं ठीक हूँ, धन्यवाद। आपकी Razorpay पेमेंट पूरा करने में हम आपकी कैसे मदद कर सकते हैं?"
-                : "Hello! I am doing well, thank you. I am calling from Razorpay regarding your recent transaction. How can I assist you today?",
-            recommended_action: "Greet customer and open recovery options"
-          };
-        }
-        // 2. Technical issues & Card failures (Must NEVER cancel order!)
-        else if (/\b(why.*card|card.*not working|card failed|card decline|declined|otp|server down|transaction failed|bank timeout|failed)\b/i.test(t)) {
-          intentData = {
-            intent: "TECHNICAL_ISSUE",
+            intent: "CARD_DECLINE",
             sentiment: "Technical Complaint",
-            confidence_score: 97,
+            confidence_score: 98,
             willingness_to_pay: true,
             payment_method: "UPI (Google Pay / PhonePe)",
             ai_spoken_reply: selectedLang.code === 'kn-IN'
-              ? "ಬ್ಯಾಂಕ್ ಸರ್ವರ್ ಸಮಸ್ಯೆಯಿಂದ ಕಾರ್ಡ್ ಪಾವತಿ ವಿಫಲವಾಗಿರಬಹುದು. ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲೆ?"
-              : selectedLang.code === 'hi-IN'
-                ? "बैंक सर्वर डाउन होने के कारण कार्ड डिक्लाइन हो सकता है। क्या मैं आपके व्हाट्सएप पर 1-टैप यूपीआई लिंक भेज दूँ?"
-                : "Card declines usually happen due to temporary bank server downtime or OTP limits. Would you like me to send a fast 1-tap UPI link to your WhatsApp instead?",
-            recommended_action: "Provide downtime diagnostics and offer instant 1-Tap UPI switch"
+              ? "ಬ್ಯಾಂಕ್ ಸರ್ವರ್ ಸಮಸ್ಯೆಯಿಂದ ಕಾರ್ಡ್ ಪಾವತಿ ವಿಫಲವಾಗಿದೆ. ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲೆ ಅಥವಾ 10 ನಿಮಿಷಗಳ ನಂತರ ಮರುಪ್ರಯತ್ನಿಸುತ್ತೀರಾ?"
+              : "We noticed a temporary bank gateway timeout on your card. Would you prefer an instant 1-tap UPI link on WhatsApp, or would you like to retry your card in 10 minutes?",
+            recommended_action: "Offer smart UPI auto-reroute to bypass bank downtime"
           };
         }
-        // 3. Price / Discounts / Cheap queries
-        else if (/\b(cheap|price|discount|offer|coupon|cost|cheaper|rates)\b/i.test(t)) {
+        // 2. Switch to UPI
+        else if (/\b(gpay|google pay|phonepe|paytm|switch to upi|send upi|ಯುಪಿಐ|ಜಿಪೇ)\b/i.test(t)) {
           intentData = {
-            intent: "PRICE_INQUIRY",
-            sentiment: "Price Sensitive",
-            confidence_score: 95,
-            willingness_to_pay: true,
-            payment_method: "UPI",
-            ai_spoken_reply: "We offer instant cashback and bank discount offers when paying via 1-Tap UPI. Would you like me to send your discount payment link on WhatsApp?",
-            recommended_action: "Apply dynamic UPI discount incentive and send recovery link"
-          };
-        }
-        // 4. Refund requests
-        else if (/\b(refund|money deducted|paisa cut|deducted|ರೀಫಂಡ್|ಕಟ್ ಆಗಿದೆ|रिफंड)\b/i.test(t)) {
-          intentData = {
-            intent: "REFUND_REQUEST",
-            sentiment: "Frustrated / Refund",
-            confidence_score: 97,
-            willingness_to_pay: false,
-            ai_spoken_reply: selectedLang.code === 'en-IN' 
-              ? "Don't worry! We are issuing an instant T+0 reversal to your bank account right now. Your UTR has been sent to WhatsApp." 
-              : selectedLang.code === 'kn-IN'
-                ? "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."
-                : "चिंता न करें! आपका रिफंड तुरंत आपके बैंक खाते में भेजा जा रहा है।",
-            recommended_action: "Initiate T+0 Instant Refund via Razorpay API"
-          };
-        }
-        // 5. Explicit Cancellations ONLY (Strict whole-phrase matching)
-        else if (/\b(cancel my order|cancel order|cancel it|dont want|don't want|not interested|stop calling|refuse|ಬೇಡ|ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ|nahi chahiye|radd karo)\b/i.test(t)) {
-          intentData = {
-            intent: "OPT_OUT",
-            sentiment: "Refusal / Cancellation",
-            confidence_score: 98,
-            willingness_to_pay: false,
-            ai_spoken_reply: selectedLang.ttsCancelResponse,
-            recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
-          };
-        }
-        // 6. Alternative UPI method
-        else if (/\b(upi|gpay|phonepe|paytm|link|whatsapp link|qr|google pay|ಯುಪಿಐ|ಜಿಪೇ|ಫೋನ್‌ಪೇ|यूपीआई)\b/i.test(t)) {
-          intentData = {
-            intent: "ALTERNATIVE_METHOD",
+            intent: "UPI_SWITCH",
             sentiment: "Positive (Prefers UPI)",
-            confidence_score: 96,
+            confidence_score: 98,
             willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.code === 'en-IN'
-              ? "Sure! We are sending an instant 1-tap UPI payment link directly to your WhatsApp right now."
-              : selectedLang.code === 'kn-IN'
-                ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ."
-                : "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।",
+            payment_method: "UPI (Google Pay / PhonePe)",
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಖಂಡಿತ! ನೀವು ಯಾವ ಆ್ಯಪ್ ಬಳಸುತ್ತೀರಿ: Google Pay, PhonePe ಅಥವಾ Paytm? ಇವಾಗ್ಲೇ ವಾಟ್ಸಾಪ್‌ಗೆ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ."
+              : "Sure! Which UPI app do you prefer: Google Pay, PhonePe, or Paytm? We can send the 1-tap link directly to your WhatsApp.",
             recommended_action: "Generate instant 1-Tap UPI deep link via Razorpay"
           };
         }
-        // 7. Promise to pay later
-        else if (/\b(tomorrow|later|morning|evening|next week|will pay|pay tomorrow|ನಾಳೆ|ಮಾಡ್ತೀನಿ|kal|kar dunga)\b/i.test(t)) {
+        // 3. Schedule Tomorrow
+        else if (/\b(tomorrow|later|schedule|morning|evening|next week|will pay|ನಾಳೆ|ಮಾಡ್ತೀನಿ)\b/i.test(t)) {
           intentData = {
             intent: "PROMISE_TO_PAY",
             sentiment: "Positive (Promise to Pay)",
             confidence_score: 97,
             willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.ttsPromiseResponse,
-            recommended_action: "Schedule 1-Tap UPI WhatsApp Payment Link for tomorrow"
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಖಂಡಿತ! ನಾಳೆ ಯಾವ ಸಮಯ ನಿಮಗೆ ಅನುಕೂಲಕರ: ಬೆಳಗ್ಗೆ 9:00 ಗಂಟೆಗೆ ಅಥವಾ ಮಧ್ಯಾಹ್ನ 11:30 ಕ್ಕೆ?"
+              : "Understood! What time tomorrow works best for you: 9:00 AM or 11:30 AM before banking hours?",
+            recommended_action: "Schedule 1-Tap UPI WhatsApp Payment Link for customer window"
           };
         }
-        // 8. General conversational fallback
+        // 4. Double-Debit / Refund
+        else if (/\b(refund|money deducted|double debit|paisa cut|deducted|ರೀಫಂಡ್|ಕಟ್ ಆಗಿದೆ)\b/i.test(t)) {
+          intentData = {
+            intent: "REFUND_REQUEST",
+            sentiment: "Frustrated / Refund",
+            confidence_score: 98,
+            willingness_to_pay: false,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಬ್ಯಾಂಕ್ ಖಾತೆಗೆ 2.1 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ₹4,650 ರಿಫಂಡ್ ಜಮೆ ಮಾಡಲಾಗುತ್ತಿದೆ. ನಿಮ್ಮ UTR ಸಂಖ್ಯೆಯನ್ನು ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಬಹುದೇ?"
+              : "Don't worry! We are issuing an instant T+0 reversal of ₹4,650 to your account in 2.1 seconds. Can you confirm if your UPI ID is rajesh@okhdfcbank?",
+            recommended_action: "Execute T+0 Instant Refund via Razorpay and deliver UTR"
+          };
+        }
+        // 5. Discounts & Offers
+        else if (/\b(cheap|discount|cashback|offer|coupon|promo|price)\b/i.test(t)) {
+          intentData = {
+            intent: "PRICE_DISCOUNT",
+            sentiment: "Price Sensitive",
+            confidence_score: 96,
+            willingness_to_pay: true,
+            ai_spoken_reply: "We have an instant 5% cashback discount available on 1-Tap UPI payments today. Would you like me to apply promo code SAVE5 to your payment link?",
+            recommended_action: "Apply dynamic 5% UPI discount and send checkout link"
+          };
+        }
+        // 6. Security & Fraud
+        else if (/\b(fraud|unauthorized|stolen|security|suspicious|safe)\b/i.test(t)) {
+          intentData = {
+            intent: "FRAUD_CHECK",
+            sentiment: "Suspicious / Security",
+            confidence_score: 97,
+            willingness_to_pay: false,
+            ai_spoken_reply: "Security is our highest priority. Did you attempt this ₹4,650 transaction at 10:14 PM, or should we immediately freeze this transaction and escalate to our fraud desk?",
+            recommended_action: "Freeze transaction and trigger instant War Room compliance audit"
+          };
+        }
+        // 7. Split / Installment
+        else if (/\b(split|partial|half|installments|emi|two parts)\b/i.test(t)) {
+          intentData = {
+            intent: "SPLIT_PAYMENT",
+            sentiment: "Positive (Installments)",
+            confidence_score: 96,
+            willingness_to_pay: true,
+            ai_spoken_reply: "Yes! Would you like to pay half (₹2,325) right now via UPI, and schedule the remaining balance for the 1st of next month?",
+            recommended_action: "Generate 2-part split payment link via Razorpay"
+          };
+        }
+        // 8. Corporate GST Invoice
+        else if (/\b(gst|invoice|b2b|tax invoice|company|business)\b/i.test(t)) {
+          intentData = {
+            intent: "GST_INVOICE",
+            sentiment: "Positive (Corporate)",
+            confidence_score: 97,
+            willingness_to_pay: true,
+            ai_spoken_reply: "Certainly! Would you like a B2B tax invoice generated with your company GSTIN upon payment completion?",
+            recommended_action: "Attach automated GSTIN tax invoice generator to payment receipt"
+          };
+        }
+        // 9. Store Credit + 5% Bonus
+        else if (/\b(store credit|voucher|wallet|perk|bonus|goodwill)\b/i.test(t)) {
+          intentData = {
+            intent: "STORE_CREDIT",
+            sentiment: "Positive (Store Credit)",
+            confidence_score: 98,
+            willingness_to_pay: true,
+            ai_spoken_reply: "Instead of waiting for bank settlement, would you like an instant ₹4,882 store credit voucher (including a 5% bonus) to complete your order immediately?",
+            recommended_action: "Issue instant 5% goodwill store credit voucher"
+          };
+        }
+        // 10. Cancellation / Opt-Out
+        else if (/\b(cancel my order|cancel order|cancel it|dont want|don't want|not interested|stop calling|refuse|ಬೇಡ|ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ)\b/i.test(t)) {
+          intentData = {
+            intent: "OPT_OUT",
+            sentiment: "Refusal / Cancellation",
+            confidence_score: 98,
+            willingness_to_pay: false,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಖಂಡಿತ, ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಈ ಆರ್ಡರ್ ಅನ್ನು ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲಾಗಿದೆ. ನಾವು ಇನ್ನು ಮುಂದೆ ಕರೆ ಮಾಡುವುದಿಲ್ಲ."
+              : "We respect your decision. Your order has been cancelled and all future recovery calls have been paused. Have a wonderful day!",
+            recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
+          };
+        }
+        // General / Chitchat
         else {
           intentData = {
             intent: "GENERAL_QUERY",
-            sentiment: "Engaged Customer",
-            confidence_score: 94,
+            sentiment: "Neutral",
+            confidence_score: 95,
             willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.code === 'en-IN'
-              ? "Thank you for sharing that. I have noted your details and our team is assisting you with completing your transaction."
-              : selectedLang.code === 'kn-IN'
-                ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ."
-                : "धन्यवाद. हमने आपका अनुरोध नोट कर लिया है।",
-            recommended_action: "Logged conversation and assigned priority recovery strategy"
+            ai_spoken_reply: "Hello! I am doing well, thank you. I am calling from Razorpay regarding your recent transaction. How can I assist you today?",
+            recommended_action: "Greeted customer and opened recovery dialogue"
           };
         }
       }
 
-      const aiReplyText = intentData.ai_spoken_reply || selectedLang.ttsPromiseResponse;
+      const aiReplyText = intentData.ai_spoken_reply || "I am listening to help you complete your transaction.";
 
       // Update structured state
       const isCancellation = intentData.intent === "OPT_OUT";
@@ -496,7 +527,7 @@ export default function VoiceRecovery() {
           <div className="flex items-center space-x-3 mb-1">
             <h1 className="text-2xl font-bold text-white flex items-center">
               <Phone className="mr-2.5 text-blue-500" size={24} />
-              Sequential Multi-Turn Voice AI Agent
+              Interactive Multi-Turn Voice AI Agent
             </h1>
             <span className="flex items-center text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1.5"></span>
@@ -504,7 +535,7 @@ export default function VoiceRecovery() {
             </span>
           </div>
           <p className="text-gray-400 text-xs">
-            Calm, turn-by-turn phone conversation: Select your language and speak naturally.
+            10 interactive customer inquiry scenarios. Click any topic or speak naturally into the microphone.
           </p>
         </div>
 
@@ -540,11 +571,39 @@ export default function VoiceRecovery() {
         </div>
       </header>
 
+      {/* 10 Unique Interactive Conversation Starter Options Bar */}
+      <section className="max-w-6xl mx-auto mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center">
+            <Sparkles size={12} className="mr-1.5 text-yellow-400" />
+            10 Interactive Customer Recovery Scenarios (Click to Initiate Dialogue):
+          </span>
+          <span className="text-[10px] text-blue-400 font-mono">AI Proactively Inquires & Solves</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {QUICK_SCENARIOS.map((sc) => {
+            const Icon = sc.icon;
+            return (
+              <button
+                key={sc.id}
+                onClick={() => handleScenarioClick(sc)}
+                disabled={callState !== 'IDLE'}
+                className={`p-2.5 rounded-xl border text-left transition flex items-center space-x-2 hover:scale-[1.02] disabled:opacity-50 ${sc.color}`}
+              >
+                <Icon size={16} className="shrink-0" />
+                <span className="text-[11px] font-semibold truncate text-gray-200">{sc.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Main 2-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto">
         
         {/* Left 7 Columns: Live Call Thread & Interaction Center */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-gray-800 flex flex-col shadow-2xl overflow-hidden min-h-[560px]">
+        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-gray-800 flex flex-col shadow-2xl overflow-hidden min-h-[500px]">
           
           {/* Active Call Header */}
           <div className="p-3.5 bg-slate-950/80 border-b border-gray-800 flex justify-between items-center text-xs">
@@ -562,7 +621,7 @@ export default function VoiceRecovery() {
           </div>
 
           {/* Chronological Multi-Turn Conversation Thread */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-black/40 text-xs font-sans max-h-[340px]">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-black/40 text-xs font-sans max-h-[300px]">
             {conversationHistory.map((msg) => {
               const isCustomer = msg.role === 'customer';
               return (
@@ -614,7 +673,7 @@ export default function VoiceRecovery() {
             {callState === 'ANALYZING' && (
               <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
                 <Activity size={16} className="animate-spin" />
-                <span>AI Agent understanding your dialogue...</span>
+                <span>AI Agent understanding your dialogue & preparing clarifying question...</span>
               </div>
             )}
 
@@ -659,23 +718,13 @@ export default function VoiceRecovery() {
                   TAP TO TALK ({selectedLang.name})
                 </button>
               )}
-
-              {/* One-Click Sample Prompt to Test */}
-              <button
-                onClick={handleSamplePromptClick}
-                disabled={callState !== 'IDLE'}
-                className="px-3 py-3 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-gray-800 rounded-xl text-xs font-semibold shrink-0 transition disabled:opacity-50"
-                title="Simulate sample prompt"
-              >
-                <Play size={14} className="inline mr-1" /> Test Sample
-              </button>
             </div>
 
             {/* Custom Text Typing Bar */}
             <form onSubmit={handleCustomTextSubmit} className="mt-3 flex space-x-2">
               <input 
                 type="text" 
-                placeholder={`Type next reply in ${selectedLang.name}...`}
+                placeholder={`Reply to AI's question in ${selectedLang.name}...`}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 disabled={callState !== 'IDLE'}
@@ -716,7 +765,7 @@ export default function VoiceRecovery() {
                 <dd className={`font-bold ${
                   parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-white'
                 }`}>
-                  {parsedIntent?.intent || "Awaiting Dialogue"}
+                  {parsedIntent?.intent || "Awaiting Scenario"}
                 </dd>
               </div>
 
