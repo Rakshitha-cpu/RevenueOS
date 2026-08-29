@@ -52,6 +52,9 @@ export default function RootLayout({
             <Link href="/command-center" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Terminal size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Command Center</span>
             </Link>
+            <Link href="/about" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
+              <FileText size={18} className="group-hover:text-cyan-400 transition-colors" /> <span className="font-medium">System Overview (Print)</span>
+            </Link>
           </nav>
           
           <div className="p-6 border-t border-slate-900">
