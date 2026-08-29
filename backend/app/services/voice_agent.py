@@ -107,8 +107,24 @@ class VoiceAgent:
         # 2. DETERMINISTIC MULTI-TURN TELECALLER ENGINE (Progressive States)
         t = user_utterance.lower().strip()
 
-        # Step A: Human Escalation
-        if re.search(r'\b(human|manager|senior|officer|talk to person|person|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी)\b', t):
+        # Step A: Wrong Number / DND
+        if re.search(r'\b(wrong number|not rajesh|ತಪ್ಪು ಸಂಖ್ಯೆ|गलत नंबर|தவறான எண்)\b', t):
+            is_kn = any(w in t for w in ["ತಪ್ಪು", "ಸಂಖ್ಯೆ"])
+            return {
+                "ai_spoken_reply": "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DNC ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ." if is_kn else "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.",
+                "intent": "DND_STOPPING_RULE",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": False,
+                "confidence_score": 99,
+                "sentiment": "Identity Refusal (DND)",
+                "payment_method": None,
+                "requested_date": None,
+                "recommended_action": "DPDP / DNC Rule Triggered: Suppressed further retries",
+                "quick_replies": ["Done, Thank You"]
+            }
+
+        # Step B: Human Escalation
+        if re.search(r'\b(human|manager|senior|officer|talk to person|person|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी|மேலாளர்)\b', t):
             is_kn = any(w in t for w in ["ವಿಕ್ರಮ್", "ಮ್ಯಾನೇಜರ್", "ವ್ಯಕ್ತಿ"])
             return {
                 "ai_spoken_reply": "ಖಂಡಿತ ರಾಜೇಶ್ ಅವರೇ. ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (₹4,650) ವಿವರಗಳೊಂದಿಗೆ ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ವಿಕ್ರಮ್ ಅವರಿಗೆ ಲೈವ್ ಕಾಲ್ ವರ್ಗಾಯಿಸಲಾಗುತ್ತಿದೆ. ದಯವಿಟ್ಟು 5 ಸೆಕೆಂಡುಗಳು ಹೋಲ್ಡ್‌ನಲ್ಲಿರಿ." if is_kn else "Certainly Rajesh. I am compiling your verified case (Order #RZP-8921, ₹4,650) and transferring you to Senior Manager Vikram right now. Please hold for 5 seconds.",
@@ -121,6 +137,22 @@ class VoiceAgent:
                 "requested_date": "Immediate",
                 "recommended_action": "Transferred live call to Senior Manager Vikram at Razorpay Desk",
                 "quick_replies": ["✓ Connected with Vikram", "Cancel Transfer"]
+            }
+
+        # Step C: Payment Success / Done (BEFORE UPI selection)
+        if re.search(r'\b(paid|done|completed|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|भुगतान किया|செலுத்தப்பட்டது|చెల్లించాను)\b', t):
+            is_kn = any(w in t for w in ["ಪಾವತಿಸಿದೆ", "ಮಾಡಿದೆ"])
+            return {
+                "ai_spoken_reply": "ಅದ್ಭುತ ರಾಜೇಶ್ ಅವರೇ! ನಿಮ್ಮ ₹4,650 ಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ತಕ್ಷಣ ರವಾನೆಯಾಗಲಿದೆ. ರಶೀದಿ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿದೆ. ಧನ್ಯವಾದಗಳು!" if is_kn else "Awesome Rajesh! Your payment of ₹4,650 is confirmed. Order #RZP-8921 is approved for priority warehouse dispatch. Receipt generated on WhatsApp. Thank you!",
+                "intent": "PAYMENT_CONFIRMED",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 99,
+                "sentiment": "Order Approved",
+                "payment_method": "UPI (Confirmed)",
+                "requested_date": "Immediate",
+                "recommended_action": "Payment confirmed, invoice generated, and order dispatched",
+                "quick_replies": ["✓ Order Complete", "Download Tax Invoice"]
             }
 
         # Step B: Delivery Delay Objection
