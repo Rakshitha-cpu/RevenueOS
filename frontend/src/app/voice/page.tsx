@@ -482,7 +482,7 @@ export default function VoiceRecovery() {
           };
         }
         // 5. Price Objection -> Offer 5% Retention Boost (SAVE232)
-        else if (/\b(cheap|cheaper|expensive|high|price|discount|offer|ದುಬಾರಿ|ಹೆಚ್ಚು|महंगा|ज्यादा|அதிகம்|ఎక్కువ|കൂടുതലാണ്)\b/i.test(t)) {
+        else if (/\b(cheap|cheaper|expensive|high|price|discount|offer|ದುಬಾರಿ|ಹೆಚ್ಚು|महंगा|ज्यादा|அதிகம்|எక్కువ|കൂടുതലാണ്)\b/i.test(t)) {
           intentData = {
             intent: "PRICE_RETENTION",
             sentiment: "Price Objection Inspected",
@@ -490,7 +490,73 @@ export default function VoiceRecovery() {
             willingness_to_pay: true,
             ai_spoken_reply: selectedLang.priceHighReplyText,
             recommended_action: "Applied dynamic 5% retention discount SAVE232 (₹4,418)",
-            quick_replies: ['✓ Accept 5% Bonus & Pay', 'Still Want Refund', 'Talk to Manager']
+            quick_replies: [
+              selectedLang.code === 'kn-IN' ? '✓ ₹4,418 ರಿಯಾಯಿತಿ ಸ್ವೀಕರಿಸಿ' : selectedLang.code === 'hi-IN' ? '✓ ₹4,418 ऑफर स्वीकार करें' : selectedLang.code === 'ta-IN' ? '✓ ₹4,418 சலுகையை ஏற்கவும்' : '✓ Accept 5% Bonus & Pay',
+              selectedLang.code === 'kn-IN' ? 'ಆರ್ಡರ್ ರದ್ದುಗೊಳಿಸಿ' : 'Still Want Refund',
+              'Talk to Manager'
+            ]
+          };
+        }
+        // 6. Delivery Delay Objection -> Offer Priority Express Dispatch
+        else if (/\b(delay|slow|delivery|time|taking too long|late|ತಡ|ವಿಳಂಬ|देरी|समय|தாமதம்|ఆలస్యం|വൈകൽ)\b/i.test(t)) {
+          intentData = {
+            intent: "DELIVERY_EXPEDITE",
+            sentiment: "Delivery Concern Handled",
+            confidence_score: 99,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡೆ! ನಾನು ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 ಅನ್ನು ಬ್ಲೂಡಾರ್ಟ್ ಎಕ್ಸ್‌ಪ್ರೆಸ್ ಮೂಲಕ 24 ಗಂಟೆಗಳ ಒಳಗೆ ತಲುಪಿಸಲು 'ಪ್ರಯಾರಿಟಿ ಡಿಸ್ಪ್ಯಾಚ್' ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ್ದೇನೆ. ಪಾವತಿ ಲಿಂಕ್ ವಾಟ್ಸಾಪ್ ಅಥವಾ SMS ಮೂಲಕ ಕಳುಹಿಸಲೆ?"
+              : selectedLang.code === 'hi-IN'
+                ? "मैं समझ गया! मैंने आपका आर्डर #RZP-8921 ब्लू डार्ट एक्सप्रेस द्वारा 24 घंटे में डिलीवरी के लिए 'Priority Dispatch' में अपग्रेड कर दिया है। क्या मैं पेमेंट लिंक SMS या WhatsApp पर भेज दूँ?"
+                : selectedLang.code === 'ta-IN'
+                  ? "நான் புரிந்துகொள்கிறேன்! உங்கள் ஆர்டரை 24 மணி நேரத்திற்குள் டெலிவரி செய்ய 'Priority Dispatch' மேம்படுத்தியுள்ளேன். கட்டண இணைப்பை WhatsApp அல்லது SMS மூலம் அனுப்பவா?"
+                  : "I understand Rajesh! I have upgraded your Order #RZP-8921 to Priority Express Dispatch (guaranteed delivery within 24 hours). Shall I send the 1-Tap payment link via WhatsApp or SMS?",
+            recommended_action: "Upgraded shipment to 24-hour Priority Express Dispatch",
+            quick_replies: [
+              selectedLang.code === 'kn-IN' ? 'SMS ಮೂಲಕ ಕಳುಹಿಸಿ' : selectedLang.code === 'hi-IN' ? 'SMS पर भेजें' : 'Send SMS Copy',
+              selectedLang.code === 'kn-IN' ? 'WhatsApp ಲಿಂಕ್ ತೆರೆಯಿರಿ' : selectedLang.code === 'hi-IN' ? 'WhatsApp लिंक भेजें' : 'Open WhatsApp Link',
+              'Talk to Human Manager'
+            ]
+          };
+        }
+        // 7. Send SMS Copy / WhatsApp Link Request
+        else if (/\b(sms|message|text|whatsapp|link|ಮೆಸೇಜ್|ಲಿಂಕ್|संदेश|இணைப்பு|లింక్)\b/i.test(t)) {
+          intentData = {
+            intent: "DISPATCH_CHANNEL_SENT",
+            sentiment: "Channel Delivered",
+            confidence_score: 99,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ದೃಢೀಕೃತ: ನಿಮ್ಮ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ +91 98450 XXXXX ಗೆ Razorpay 1-ಟ್ಯಾಪ್ SMS ಮತ್ತು WhatsApp ಲಿಂಕ್ ಕಳುಹಿಸಲಾಗಿದೆ. ನೀವು ಗೂಗಲ್ ಪೇ ಅಥವಾ ಫೋನ್‌ಪೇ ಮೂಲಕ ಪೂರ್ಣಗೊಳಿಸಬಹುದು."
+              : selectedLang.code === 'hi-IN'
+                ? "सत्यापित: आपके रजिस्टर्ड नंबर +91 98450 XXXXX पर Razorpay 1-Tap पेमेंट लिंक SMS और WhatsApp द्वारा भेज दिया गया है। आप GPay या PhonePe से पूरा कर सकते हैं।"
+                : selectedLang.code === 'ta-IN'
+                  ? "உறுதிப்படுத்தப்பட்டது: உங்கள் பதிவு செய்யப்பட்ட எண் +91 98450 XXXXX க்கு 1-Tap கட்டண இணைப்பு SMS மற்றும் WhatsApp மூலம் அனுப்பப்பட்டது."
+                  : "Verified: The official Razorpay 1-Tap payment link has been dispatched via SMS and WhatsApp to +91 98450 XXXXX. You can complete the payment in 1 tap via Google Pay or PhonePe.",
+            recommended_action: "Dispatched multi-channel SMS & WhatsApp deep link",
+            quick_replies: [
+              selectedLang.code === 'kn-IN' ? '✓ ಗೂಗಲ್ ಪೇ ಮೂಲಕ ಪಾವತಿಸಿದೆ' : selectedLang.code === 'hi-IN' ? '✓ Google Pay से भुगतान किया' : '✓ Paid via Google Pay',
+              selectedLang.code === 'kn-IN' ? '✓ ಫೋನ್‌ಪೇ ಮೂಲಕ ಪಾವತಿಸಿದೆ' : selectedLang.code === 'hi-IN' ? '✓ PhonePe से भुगतान किया' : '✓ Paid via PhonePe',
+              'Talk to Human Manager'
+            ]
+          };
+        }
+        // 8. Payment Success / Done
+        else if (/\b(paid|done|complete|completed|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|भुगतान किया|செலுத்தப்பட்டது|చెల్లించాను)\b/i.test(t)) {
+          intentData = {
+            intent: "PAYMENT_CONFIRMED",
+            sentiment: "Order Approved",
+            confidence_score: 99,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಅದ್ಭುತ! ನಿಮ್ಮ ₹4,650 ಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ತಕ್ಷಣ ರವಾನೆಯಾಗಲಿದೆ. ನಿಮ್ಮ ಇನ್‌ವಾಯ್ಸ್ ರಶೀದಿ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿದೆ. Razorpay ಬಳಸಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!"
+              : selectedLang.code === 'hi-IN'
+                ? "शानदार! आपका ₹4,650 का भुगतान सफल हो गया है। आर्डर #RZP-8921 तुरंत डिस्पैच कर दिया जाएगा। इनवॉइस WhatsApp पर उपलब्ध है। धन्यवाद!"
+                : selectedLang.code === 'ta-IN'
+                  ? "அற்புதம்! உங்கள் ₹4,650 கட்டணம் வெற்றிகரமாக செலுத்தப்பட்டது. ஆர்டர் #RZP-8921 உடனடியாக அனுப்பப்படும். நன்றி!"
+                  : "Awesome Rajesh! Your payment of ₹4,650 is confirmed. Order #RZP-8921 is approved for priority warehouse dispatch. Receipt generated on WhatsApp. Thank you!",
+            recommended_action: "Payment confirmed, invoice generated, and order dispatched",
+            quick_replies: ['✓ Order Complete', 'Download Tax Invoice']
           };
         }
         // Default Telecaller Inspection

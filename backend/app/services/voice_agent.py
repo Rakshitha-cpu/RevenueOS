@@ -123,20 +123,36 @@ class VoiceAgent:
                 "quick_replies": ["✓ Connected with Vikram", "Cancel Transfer"]
             }
 
-        # Step B: SMS Delivery Request (DO NOT REPEAT INITIAL CONFIRMATION)
+        # Step B: Delivery Delay Objection
+        if re.search(r'\b(delay|slow|delivery|time|taking too long|late|ತಡ|ವಿಳಂಬ|देरी|समय|தாமதம்|ఆలస్యం|വൈകൽ)\b', t):
+            is_kn = any(w in t for w in ["ತಡ", "ವಿಳಂಬ"])
+            return {
+                "ai_spoken_reply": "ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡೆ! ನಾನು ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 ಅನ್ನು 24 ಗಂಟೆಗಳ ಒಳಗೆ ತಲುಪಿಸಲು 'ಪ್ರಯಾರಿಟಿ ಡಿಸ್ಪ್ಯಾಚ್' ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ್ದೇನೆ. ಪಾವತಿ ಲಿಂಕ್ ವಾಟ್ಸಾಪ್ ಅಥವಾ SMS ಮೂಲಕ ಕಳುಹಿಸಲೆ?" if is_kn else "I understand Rajesh! I have upgraded your Order #RZP-8921 to Priority Express Dispatch (guaranteed delivery within 24 hours). Shall I send the 1-Tap payment link via WhatsApp or SMS?",
+                "intent": "DELIVERY_EXPEDITE",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 99,
+                "sentiment": "Delivery Concern Handled",
+                "payment_method": "Priority UPI Link",
+                "requested_date": "Immediate",
+                "recommended_action": "Upgraded shipment to 24-hour Priority Express Dispatch",
+                "quick_replies": ["Send SMS Copy", "Open WhatsApp Link", "Talk to Human Manager"]
+            }
+
+        # Step C: SMS Delivery Request (DO NOT REPEAT INITIAL CONFIRMATION)
         if re.search(r'\b(sms|text message|send sms|ಎಸ್ಎಂಎಸ್|ಮೆಸೇಜ್|एसएमएस)\b', t):
             is_kn = any(w in t for w in ["ಎಸ್ಎಂಎಸ್", "ಮೆಸೇಜ್"])
             return {
                 "ai_spoken_reply": "ಖಂಡಿತ! ಪಾವತಿ ಲಿಂಕ್ ಹೊಂದಿರುವ SMS ಅನ್ನು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ +91 98450 XXXXX ಗೆ ರವಾನಿಸಲಾಗಿದೆ. ನೀವು ಗೂಗಲ್ ಪೇ ಅಥವಾ ಫೋನ್‌ಪೇ ಮೂಲಕ ಪಾವತಿಸಲು ಬಯಸುತ್ತೀರಾ?" if is_kn else "Done! A secure SMS with your 1-Tap payment link has been dispatched to +91 98450 XXXXX. Would you prefer completing it via Google Pay or PhonePe?",
                 "intent": "SMS_DISPATCHED",
                 "detected_language": "Kannada" if is_kn else "English",
-                "willingness_to_pay": true,
+                "willingness_to_pay": True,
                 "confidence_score": 99,
                 "sentiment": "Positive (Channel Switch)",
                 "payment_method": "SMS Link",
                 "requested_date": "Immediate",
                 "recommended_action": "Dispatched verified SMS payment deep link to customer mobile",
-                "quick_replies": ["Google Pay", "PhonePe", "Paytm UPI", "Check Delivery Status"]
+                "quick_replies": ["Paid via Google Pay", "Paid via PhonePe", "Talk to Human Manager"]
             }
 
         # Step C: WhatsApp Link / UPI Switch Request
