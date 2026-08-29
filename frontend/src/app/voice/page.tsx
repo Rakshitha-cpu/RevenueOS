@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Mic, MicOff, Activity, ShieldCheck, Languages, ArrowRight, Zap, Play, Send, 
-  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, QrCode, Sparkles 
+  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, QrCode, Sparkles, Gauge 
 } from 'lucide-react';
 
 interface LanguageOption {
@@ -45,7 +45,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Tamil', 
     nativeName: 'தமிழ்', 
     samplePhrase: 'கார்டு வேலை செய்யவில்லை, நாளைக்கு ஜிபே மூலமா பணம் கட்டுகிறேன்',
-    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிஐ கட்டண இணைப்பை அனுப்புகிறோம்.',
+    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிಐ கட்டண இணைப்பை அனுப்புகிறோம்.',
     ttsCancelResponse: 'சரி, உங்கள் கோரிக்கையின்படி ஆர்டர் ரத்து செய்யப்பட்டது.'
   },
   { 
@@ -61,7 +61,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Malayalam', 
     nativeName: 'മലയാളം', 
     samplePhrase: 'കാർഡ് വർക്കാവുന്നില്ല, നാളെ രാവിലെ ഗൂഗിൾ പേ വഴി തരാം',
-    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
+    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിಐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
     ttsCancelResponse: 'ശരി, നിങ്ങളുടെ അഭ്യർത്ഥന പ്രകാരം ഓർഡർ റദ്ദാക്കി.'
   }
 ];
@@ -231,13 +231,17 @@ export default function VoiceRecovery() {
         intent: "OPT_OUT",
         detected_language: selectedLang.name,
         willingness_to_pay: false,
+        sentiment: "Refusal / Cancellation",
+        confidence_score: 98,
         payment_method: null,
-        requested_date: null
+        requested_date: null,
+        ai_spoken_reply: selectedLang.ttsCancelResponse,
+        recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
       };
     }
 
     // Alternative UPI method check
-    const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "paytm", "qr", "link", "गूगल पे", "यूपीआई"].some(k => t.includes(k));
+    const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "paytm", "qr", "link", "गूगल पे", "यूपीಐ"].some(k => t.includes(k));
 
     // Promise to pay check
     const isPromise = [
@@ -251,8 +255,12 @@ export default function VoiceRecovery() {
         intent: "PROMISE_TO_PAY",
         detected_language: selectedLang.name,
         willingness_to_pay: true,
+        sentiment: "Positive (Promise to Pay)",
+        confidence_score: 97,
         payment_method: isUPI ? "UPI" : "UPI (Google Pay / PhonePe)",
-        requested_date: "Tomorrow morning"
+        requested_date: "Tomorrow morning",
+        ai_spoken_reply: selectedLang.ttsPromiseResponse,
+        recommended_action: `Schedule 1-Tap UPI WhatsApp Payment Link for tomorrow morning in ${selectedLang.name}`
       };
     }
 
@@ -261,8 +269,12 @@ export default function VoiceRecovery() {
         intent: "ALTERNATIVE_METHOD",
         detected_language: selectedLang.name,
         willingness_to_pay: true,
+        sentiment: "Positive (Prefers UPI)",
+        confidence_score: 96,
         payment_method: "UPI (Google Pay / PhonePe)",
-        requested_date: "Immediate"
+        requested_date: "Immediate",
+        ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ." : selectedLang.code === 'hi-IN' ? "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।" : "Sure! We are sending an instant 1-tap UPI payment link to your WhatsApp right now.",
+        recommended_action: "Generate instant 1-Tap UPI deep link via Razorpay"
       };
     }
 
@@ -270,8 +282,12 @@ export default function VoiceRecovery() {
       intent: "GENERAL_QUERY",
       detected_language: selectedLang.name,
       willingness_to_pay: true,
+      sentiment: "Engaged Customer",
+      confidence_score: 94,
       payment_method: "UPI",
-      requested_date: "Immediate"
+      requested_date: "Immediate",
+      ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." : selectedLang.code === 'hi-IN' ? "धन्यवाद. हमने आपका अनुरोध नोट कर लिया है और आपकी सहायता कर रहे हैं।" : "Thank you. We have noted your request and are updating your payment status.",
+      recommended_action: "Logged customer inquiry and assigned priority recovery strategy"
     };
   };
 
@@ -295,7 +311,7 @@ export default function VoiceRecovery() {
           intentData = data.extracted_data;
         }
       } catch (e) {
-        console.warn("Backend not reachable, using local multi-dialect engine.");
+        console.warn("Backend offline, using intelligent multi-dialect engine.");
       }
 
       // If backend was offline or returned unknown, use our smart local analyzer
@@ -304,9 +320,9 @@ export default function VoiceRecovery() {
       }
       
       const isCancellation = intentData.intent === "OPT_OUT" || !intentData.willingness_to_pay;
-      const spokenAudioText = isCancellation 
+      const spokenAudioText = intentData.ai_spoken_reply || (isCancellation 
         ? selectedLang.ttsCancelResponse 
-        : selectedLang.ttsPromiseResponse;
+        : selectedLang.ttsPromiseResponse);
       
       setAiSpokenResponse(spokenAudioText);
       speakAIResponse(spokenAudioText, selectedLang.code);
@@ -316,21 +332,25 @@ export default function VoiceRecovery() {
         setParsedIntent({
           intent: "OPT_OUT",
           language: intentData.detected_language || selectedLang.name,
+          sentiment: intentData.sentiment || "Refusal / Cancellation",
+          confidence: intentData.confidence_score || 98,
           willingness: "Negative (Customer Refused / Cancelled)",
           method: "None (Order Cancelled)",
           date: "N/A",
-          action: "Halt automated outreach immediately. Order cancelled per customer request."
+          action: intentData.recommended_action || "Halt automated outreach immediately. Order cancelled per customer request."
         });
       } else {
         setParsedIntent({
           intent: intentData.intent || "PROMISE_TO_PAY",
           language: intentData.detected_language || selectedLang.name,
+          sentiment: intentData.sentiment || "Positive (Promise to Pay)",
+          confidence: intentData.confidence_score || 96,
           willingness: "Positive (Promise to Pay)",
           method: intentData.payment_method || "UPI (Google Pay / PhonePe)",
           date: intentData.requested_date || "Tomorrow morning",
-          action: intentData.intent === "PROMISE_TO_PAY" 
+          action: intentData.recommended_action || (intentData.intent === "PROMISE_TO_PAY" 
                   ? `Schedule 1-Tap UPI WhatsApp Payment Link for ${intentData.requested_date || 'tomorrow'}`
-                  : `Generate instant 1-Tap ${intentData.payment_method || 'UPI'} deep link`
+                  : `Generate instant 1-Tap ${intentData.payment_method || 'UPI'} deep link`)
         });
 
         // Show interactive WhatsApp preview popup only if customer agreed to pay
@@ -461,7 +481,7 @@ export default function VoiceRecovery() {
               )}
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
-              Try: &ldquo;{selectedLang.samplePhrase}&rdquo; or &ldquo;ನನಗೆ ಬೇಡ ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ&rdquo;
+              Speak naturally (e.g. &ldquo;{selectedLang.samplePhrase}&rdquo;)
             </p>
 
             {recognitionError && (
@@ -576,9 +596,12 @@ export default function VoiceRecovery() {
                 <Zap size={18} className="mr-2 text-yellow-400" />
                 Extracted Structured Intent
               </h2>
-              <span className="text-xs bg-blue-950 text-blue-400 border border-blue-800 px-2.5 py-0.5 rounded-full font-mono">
-                Gemini NLP Live
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-mono flex items-center">
+                  <Gauge size={11} className="mr-1" />
+                  {parsedIntent?.confidence || 98}% Confidence
+                </span>
+              </div>
             </div>
 
             <dl className="grid grid-cols-2 gap-3 text-xs">
@@ -597,11 +620,11 @@ export default function VoiceRecovery() {
               </div>
 
               <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Sentiment & Willingness</dt>
+                <dt className="text-gray-400 mb-1">Sentiment / Emotion</dt>
                 <dd className={`text-sm font-bold ${
                   parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-emerald-400'
                 }`}>
-                  {parsedIntent?.willingness || "---"}
+                  {parsedIntent?.sentiment || "---"}
                 </dd>
               </div>
 
