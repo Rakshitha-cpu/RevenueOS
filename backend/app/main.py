@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import risk, ai, authorization, simulator, voice, audit, webhooks, metrics
+from app.core.exceptions import RevenueOSBaseException, revenueos_exception_handler
 from dotenv import load_dotenv
 
 # Load environment variables (API keys)
@@ -11,6 +12,9 @@ app = FastAPI(
     description="Revenue Intelligence & Recovery Orchestrator",
     version="1.0.0"
 )
+
+# Register custom exception handler
+app.add_exception_handler(RevenueOSBaseException, revenueos_exception_handler)
 
 # Allow frontend to call the backend API
 app.add_middleware(

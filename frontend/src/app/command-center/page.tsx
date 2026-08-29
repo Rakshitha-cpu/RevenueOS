@@ -1,41 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Terminal, Shield, Cpu, Zap, CreditCard, Play, CheckCircle } from 'lucide-react';
+import { useRevenueStore } from '@/store/useRevenueStore';
+
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Shield,
+  Cpu,
+  Zap,
+  CreditCard,
+  CheckCircle,
+  Terminal
+};
 
 export default function AICommandCenter() {
-  const [visibleEvents, setVisibleEvents] = useState<number>(0);
-  const [isRunning, setIsRunning] = useState(false);
-
-  const events = [
-    { time: "09:41:02", agent: "Risk Agent", action: "Detected 2,341 revenue-risk events", icon: Shield, color: "text-blue-400", bg: "bg-blue-900" },
-    { time: "09:41:04", agent: "Risk Agent", action: "Prioritized 187 high-value opportunities", icon: Shield, color: "text-blue-400", bg: "bg-blue-900" },
-    { time: "09:41:06", agent: "Recovery Agent", action: "Analyzing customer C10482", icon: Cpu, color: "text-purple-400", bg: "bg-purple-900" },
-    { time: "09:41:07", agent: "Recovery Agent", action: "Diagnosed payment-method friction", icon: Cpu, color: "text-purple-400", bg: "bg-purple-900" },
-    { time: "09:41:08", agent: "Recovery Agent", action: "Generated 4 strategies", icon: Cpu, color: "text-purple-400", bg: "bg-purple-900" },
-    { time: "09:41:09", agent: "Impact Engine", action: "Best expected recovery: ₹4,650", icon: Zap, color: "text-yellow-400", bg: "bg-yellow-900" },
-    { time: "09:41:10", agent: "Policy Guard", action: "Action authorized ✓", icon: Shield, color: "text-emerald-400", bg: "bg-emerald-900" },
-    { time: "09:41:11", agent: "Execution", action: "Payment link generated", icon: Terminal, color: "text-gray-400", bg: "bg-gray-800" },
-    { time: "09:41:34", agent: "Payment", action: "SUCCESS ✓", icon: CreditCard, color: "text-emerald-400", bg: "bg-emerald-900" },
-    { time: "09:41:35", agent: "Workflow", action: "STOPPED ✓", icon: CheckCircle, color: "text-blue-400", bg: "bg-blue-900" },
-  ];
-
-  const startDemo = () => {
-    setIsRunning(true);
-    setVisibleEvents(0);
-    
-    events.forEach((_, index) => {
-      // Stagger the event timing to simulate AI "thinking"
-      let delay = index * 900;
-      
-      // Add a realistic pause before the payment succeeds (simulating the customer receiving the link and paying)
-      if (index >= 8) delay += 2000; 
-
-      setTimeout(() => {
-        setVisibleEvents(prev => prev + 1);
-      }, delay);
-    });
-  };
+  const { 
+    visibleEventsCount, 
+    isRunning, 
+    events, 
+    metrics, 
+    activeDowntimes, 
+    startLiveTrace 
+  } = useRevenueStore();
 
   return (
     <div className="min-h-screen bg-slate-950 text-gray-100 p-8 font-mono">
@@ -48,8 +34,8 @@ export default function AICommandCenter() {
           <p className="text-gray-400 mt-2 text-sm font-sans">Real-time agent orchestration, reasoning, and policy enforcement log.</p>
         </div>
         <button 
-          onClick={startDemo}
-          disabled={isRunning && visibleEvents < events.length}
+          onClick={startLiveTrace}
+          disabled={isRunning && visibleEventsCount < events.length}
           className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-sans font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play size={16} className="mr-2" />
@@ -60,7 +46,7 @@ export default function AICommandCenter() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-slate-900 border border-gray-800 rounded-lg p-4">
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Batch Simulated</p>
-          <p className="text-2xl font-bold text-white">200</p>
+          <p className="text-2xl font-bold text-white">{metrics.batchSimulated}</p>
         </div>
         <div className="bg-slate-900 border border-gray-800 rounded-lg p-4">
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Value at Risk</p>
@@ -86,8 +72,8 @@ export default function AICommandCenter() {
           </div>
           <div className="space-y-4">
             
-            {events.slice(0, visibleEvents).map((event, idx) => {
-              const Icon = event.icon;
+            {events.slice(0, visibleEventsCount).map((event, idx) => {
+              const Icon = ICON_MAP[event.iconName] || Shield;
               return (
                 <div key={idx} className="flex items-start space-x-4 animate-in slide-in-from-left-4 fade-in duration-300">
                   <div className="text-gray-500 text-sm mt-1 w-20 shrink-0">
@@ -110,7 +96,7 @@ export default function AICommandCenter() {
               );
             })}
             
-            {isRunning && visibleEvents < events.length && (
+            {isRunning && visibleEventsCount < events.length && (
               <div className="flex items-start space-x-4 animate-pulse mt-4">
                 <div className="text-gray-700 text-sm mt-1 w-20 shrink-0">--:--:--</div>
                 <div className="p-1.5 shrink-0"><div className="w-4 h-4 rounded-full bg-gray-800"></div></div>
@@ -118,7 +104,7 @@ export default function AICommandCenter() {
               </div>
             )}
 
-            {visibleEvents === 0 && !isRunning && (
+            {visibleEventsCount === 0 && !isRunning && (
               <div className="text-gray-600 text-sm italic text-center py-16">
                 Click &quot;RUN LIVE TRACE&quot; above to simulate real-time AI recovery orchestration.
               </div>
