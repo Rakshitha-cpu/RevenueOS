@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw, FileText } from 'lucide-react';
 import Link from 'next/link';
 import ChatWidget from '@/components/ChatWidget';
 
