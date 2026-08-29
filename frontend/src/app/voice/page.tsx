@@ -56,7 +56,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     code: 'en-IN', 
     name: 'English', 
     nativeName: 'English', 
-    initialGreeting: 'Hello Rajesh! This is Priya calling from Razorpay customer verification regarding your order #RZP-8921 for Apple AirPods Pro (₹4,650). Am I speaking with Rajesh Kumar?'
+    initialGreeting: 'Hello Rajesh! This is your Razorpay Assistant calling regarding your order #RZP-8921 for Apple AirPods Pro (₹4,650). Am I speaking with Rajesh Kumar?'
   },
   { 
     code: 'kn-IN', 
@@ -935,7 +935,7 @@ export default function VoiceRecovery() {
           <div className="p-3.5 bg-slate-950/80 border-b border-gray-800 flex justify-between items-center text-xs">
             <div className="flex items-center space-x-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span className="font-semibold text-white">Telecaller Desk: Priya (Razorpay AI) ➔ Rajesh Kumar</span>
+              <span className="font-semibold text-white">Telecaller Desk: Razorpay Assistant ➔ Rajesh Kumar</span>
               <span className="text-blue-400 font-mono text-[11px] font-bold">({selectedLang.name})</span>
             </div>
             <button 
@@ -965,7 +965,7 @@ export default function VoiceRecovery() {
                         : 'bg-slate-900 border border-gray-800 text-gray-200 rounded-bl-none'
                     }`}>
                       <div className="flex items-center justify-between text-[10px] opacity-75 mb-1 gap-2">
-                        <span className="font-bold">{isCustomer ? `Customer (${msg.lang})` : 'Priya (Razorpay Telecaller)'}</span>
+                        <span className="font-bold">{isCustomer ? `Customer (${msg.lang})` : 'Razorpay Assistant'}</span>
                         <div className="flex items-center space-x-1.5 font-mono">
                           {msg.verificationBadge && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
@@ -1022,7 +1022,7 @@ export default function VoiceRecovery() {
             {callState === 'ANALYZING' && (
               <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
                 <Activity size={16} className="animate-spin" />
-                <span>Priya inspecting dialogue & updating recovery state...</span>
+                <span>Razorpay Assistant inspecting dialogue & updating recovery state...</span>
               </div>
             )}
 
@@ -1030,7 +1030,7 @@ export default function VoiceRecovery() {
             {callState === 'AI_SPEAKING' && (
               <div className="flex items-center space-x-2 text-emerald-400 p-2 text-xs">
                 <Volume2 size={16} className="animate-bounce" />
-                <span>Priya speaking in {selectedLang.name}...</span>
+                <span>Razorpay Assistant speaking in {selectedLang.name}...</span>
               </div>
             )}
 
@@ -1062,7 +1062,7 @@ export default function VoiceRecovery() {
                   className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs flex items-center justify-center transition shadow-lg disabled:opacity-50"
                 >
                   <Mic size={16} className="mr-2" />
-                  TAP TO TALK WITH PRIYA ({selectedLang.name})
+                  TAP TO TALK WITH RAZORPAY ASSISTANT ({selectedLang.name})
                 </button>
               )}
             </div>
@@ -1071,7 +1071,7 @@ export default function VoiceRecovery() {
             <form onSubmit={(e) => { e.preventDefault(); handleTurnSubmit(customText); }} className="mt-3 flex space-x-2">
               <input 
                 type="text" 
-                placeholder={`Speak or type your answer to Priya in ${selectedLang.name}...`}
+                placeholder={`Speak or type your answer to Razorpay Assistant in ${selectedLang.name}...`}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 disabled={callState !== 'IDLE'}

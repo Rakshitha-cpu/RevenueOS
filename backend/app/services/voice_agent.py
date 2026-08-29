@@ -35,7 +35,7 @@ class VoiceAgent:
         if not user_utterance or not user_utterance.strip():
             return {
                 "intent": "UNKNOWN",
-                "ai_spoken_reply": "Hello Rajesh! I am Priya from Razorpay. How can I assist you regarding your Apple AirPods Pro order today?",
+                "ai_spoken_reply": "Hello Rajesh! I am your official Razorpay Assistant. How can I assist you regarding your Apple AirPods Pro order today?",
                 "payment_method": None,
                 "requested_date": None,
                 "willingness_to_pay": False,
@@ -57,7 +57,7 @@ class VoiceAgent:
         # 1. LIVE GEMINI 2.5 FLASH TELECALLER CONVERSATION
         if self.client:
             prompt = f"""
-            You are Priya, a human-grade, alert, and courteous customer verification telecaller for Razorpay.
+            You are the official Razorpay Assistant, a human-grade, alert, and courteous customer verification telecaller for Razorpay.
             You are speaking with customer Rajesh Kumar (+91 98450 XXXXX) regarding his pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650).
             
             {history_context}
