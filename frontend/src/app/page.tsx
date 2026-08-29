@@ -1,168 +1,479 @@
 'use client';
 
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { AlertTriangle, TrendingUp, Shield, ArrowUpRight, Zap, Target, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { 
+  Zap, ArrowRight, ShieldCheck, Phone, RefreshCw, BarChart3, Lock, 
+  ChevronRight, Sparkles, CheckCircle2, Globe, Cpu, Smartphone, 
+  Mail, KeyRound, Shield, Check, Star, Play, Terminal, ArrowUpRight
+} from 'lucide-react';
 
-const mockChartData = [
-  { time: '09:00', recovered: 12000, lost: 45000 },
-  { time: '10:00', recovered: 25000, lost: 42000 },
-  { time: '11:00', recovered: 48000, lost: 38000 },
-  { time: '12:00', recovered: 85000, lost: 35000 },
-  { time: '13:00', recovered: 112000, lost: 30000 },
-  { time: '14:00', recovered: 145000, lost: 28000 },
-  { time: '15:00', recovered: 180000, lost: 25000 },
-];
+export default function LandingAndAuthPage() {
+  const router = useRouter();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'OTP_VERIFY'>('LOGIN');
+  
+  // Auth Form State
+  const [authMethod, setAuthMethod] = useState<'EMAIL' | 'PHONE'>('EMAIL');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
 
-export default function Dashboard() {
+  // 3 Professional Animated Feature Showcase Slides
+  const SLIDES = [
+    {
+      badge: "Autonomous Telecaller & Speech AI",
+      title: "Human-Grade Vernacular Voice Agent Priya",
+      desc: "Answers customer queries in 6 Indian languages (Kannada, Hindi, English, Tamil, Telugu, Malayalam), probes cancellation motives with zero blind assumptions, and executes seamless manager escalation.",
+      stat: "42.8% Recovery Uplift",
+      icon: Phone,
+      color: "from-blue-500 via-indigo-600 to-purple-600",
+      targetUrl: "/voice"
+    },
+    {
+      badge: "T+0 Instant Reversals",
+      title: "2.18s Instant Refund & 5% Goodwill Engine",
+      desc: "Resolves double-debits in sub-3-seconds through direct Razorpay refund APIs with automated NPCI UTR audit trails, or issues 5% bonus store credits to save the cart.",
+      stat: "2.18s Settlement Speed",
+      icon: RefreshCw,
+      color: "from-emerald-500 via-teal-600 to-cyan-600",
+      targetUrl: "/refunds"
+    },
+    {
+      badge: "Executive Strategy Simulator",
+      title: "Monte Carlo Revenue What-If Sandbox",
+      desc: "Simulate recovery gain vs. brand fatigue trade-offs across aggressive, balanced, and policy-guarded strategies before deploying to live production.",
+      stat: "₹12.4L Daily Risk Managed",
+      icon: BarChart3,
+      color: "from-amber-500 via-orange-600 to-rose-600",
+      targetUrl: "/simulator"
+    }
+  ];
+
+  // Auto-advance sliding animation every 4.5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % SLIDES.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleSendCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailOrPhone.trim()) return;
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setAuthMode('OTP_VERIFY');
+    }, 800);
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setAuthSuccess(true);
+      setTimeout(() => {
+        router.push('/war-room');
+      }, 1000);
+    }, 1000);
+  };
+
+  const handleOAuthLogin = (provider: string) => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setAuthSuccess(true);
+      setTimeout(() => {
+        router.push('/war-room');
+      }, 800);
+    }, 800);
+  };
+
   return (
-    <div className="font-sans max-w-7xl mx-auto">
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">Revenue War Room</h1>
-          <p className="text-slate-500 font-medium">Real-time overview of failed payments and AI-driven recovery.</p>
-        </div>
-        <div className="mt-4 md:mt-0 flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
-          <span className="flex h-3 w-3 relative mr-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-          </span>
-          <span className="text-sm font-semibold text-slate-700">AI Agents Active</span>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden">
+      
+      {/* Background Ambient Glow */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-3xl shadow-xl shadow-slate-900/10 border border-slate-800 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-          <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <Target size={120} />
+      {/* Top Professional Navigation Bar */}
+      <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-800/80 relative z-20">
+        
+        {/* Brand Logo */}
+        <div className="flex items-center space-x-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 flex items-center justify-center font-extrabold text-xl text-white shadow-xl shadow-blue-500/30">
+            R
           </div>
-          <p className="text-slate-400 font-medium mb-1">Total Revenue At Risk</p>
-          <h2 className="text-4xl font-black text-white mb-2">₹12.4L</h2>
-          <p className="text-sm text-red-400 flex items-center font-medium">
-            <TrendingUp size={16} className="mr-1" /> +14% vs yesterday
+          <div>
+            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+              RevenueOS
+            </span>
+            <span className="hidden sm:inline-block ml-2.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800">
+              v2.5 Production
+            </span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => { setAuthMode('LOGIN'); setShowAuthModal(true); }}
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-900 transition"
+          >
+            Sign In
+          </button>
+          
+          <button
+            onClick={() => { setAuthMode('REGISTER'); setShowAuthModal(true); }}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/30 transition hover:scale-105 flex items-center"
+          >
+            Get Started Free <ArrowRight size={14} className="ml-1.5" />
+          </button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-6 pt-12 pb-20 relative z-10">
+        
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-950/80 border border-blue-800 text-blue-400 text-xs font-semibold mb-6 shadow-inner animate-pulse">
+            <Sparkles size={13} className="text-yellow-400" />
+            <span>Autonomous AI Recovery & Vernacular Telecalling</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight mb-6">
+            Stop Losing 40% of Cart Revenue to{' '}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+              Failed Checkouts
+            </span>
+          </h1>
+
+          <p className="text-slate-400 text-base sm:text-lg leading-relaxed mb-8">
+            RevenueOS autonomously inspects gateway errors, speaks to customers in their mother tongue with zero blind assumptions, sends 1-tap WhatsApp UPI links, and issues T+0 refunds in 2.18 seconds.
           </p>
-        </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl shadow-xl shadow-blue-600/20 border border-blue-500 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-          <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <Zap size={120} />
-          </div>
-          <p className="text-blue-200 font-medium mb-1">AI Recovered (Today)</p>
-          <h2 className="text-4xl font-black text-white mb-2">₹4.2L</h2>
-          <p className="text-sm text-blue-100 flex items-center font-medium">
-            <ArrowUpRight size={16} className="mr-1" /> 182 successful interventions
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-           <div className="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform duration-500 text-slate-900">
-            <Shield size={120} />
-          </div>
-          <p className="text-slate-500 font-medium mb-1">Policy Guard Blocks</p>
-          <h2 className="text-4xl font-black text-slate-900 mb-2">24</h2>
-          <p className="text-sm text-emerald-600 flex items-center font-medium">
-            <Shield size={16} className="mr-1" /> AI actions safely blocked
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg shadow-slate-200/40 border border-slate-200 p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-bold text-xl text-slate-800">Recovery Trajectory</h3>
-            <select className="bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2 text-slate-700 font-medium outline-none focus:ring-2 focus:ring-blue-500">
-              <option>Today</option>
-              <option>Last 7 Days</option>
-            </select>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockChartData}>
-                <defs>
-                  <linearGradient id="colorRecovered" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ fontWeight: 600 }}
-                />
-                <Area type="monotone" dataKey="recovered" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorRecovered)" />
-                <Line type="monotone" dataKey="lost" stroke="#cbd5e1" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => { setAuthMode('REGISTER'); setShowAuthModal(true); }}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition hover:scale-105 flex items-center justify-center"
+            >
+              Open Revenue War Room <ArrowRight size={16} className="ml-2" />
+            </button>
+            <Link
+              href="/voice"
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-semibold text-sm transition flex items-center justify-center"
+            >
+              <Phone size={15} className="mr-2 text-blue-400" /> Test Live Voice AI (Priya)
+            </Link>
           </div>
         </div>
 
-        {/* AI Action Priority List */}
-        <div className="bg-white rounded-3xl shadow-lg shadow-slate-200/40 border border-slate-200 p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-xl text-slate-800 flex items-center">
-              <AlertTriangle className="mr-2 text-amber-500" size={20} />
-              Policy Guard Escalations
-            </h3>
-            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md">HUMAN REQUIRED</span>
-          </div>
-          <div className="space-y-4">
+        {/* Dynamic Animated Sliding Showcase */}
+        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+          
+          {/* Slider Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-6 mb-8 gap-4">
+            <div>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-blue-400">
+                {SLIDES[activeSlide].badge}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+                {SLIDES[activeSlide].title}
+              </h2>
+            </div>
             
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-slate-900">Enterprise Corp</span>
-                <span className="font-bold text-red-600">₹8.4L</span>
-              </div>
-              <p className="text-sm text-slate-600 mb-3">Autopilot blocked: Threshold exceeded (₹50k limit).</p>
-              <button className="text-sm font-semibold text-amber-700 bg-amber-100/50 hover:bg-amber-200 px-3 py-1.5 rounded-lg w-full transition-colors">
-                Manually Approve
-              </button>
+            {/* Slide Navigation Dots */}
+            <div className="flex items-center space-x-2">
+              {SLIDES.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveSlide(idx)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    activeSlide === idx ? 'w-8 bg-blue-500' : 'w-2.5 bg-slate-700 hover:bg-slate-600'
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
             </div>
+          </div>
 
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-slate-900">TechCorp India</span>
-                <span className="font-bold text-red-600">₹1.2L</span>
-              </div>
-              <p className="text-sm text-slate-600 mb-3">AI Confidence Low (42%). Customer sentiment is angry. Handoff requested.</p>
-              <button className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg w-full transition-colors flex justify-center items-center">
-                <User size={16} className="mr-2" /> Take Over (Human)
-              </button>
-            </div>
+          {/* Slide Body */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            <div className="lg:col-span-7 space-y-5">
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                {SLIDES[activeSlide].desc}
+              </p>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-slate-900">Rahul Sharma</span>
-                <span className="font-bold text-emerald-600">₹7,999</span>
+              <div className="inline-flex items-center space-x-2 bg-black/50 border border-slate-800 px-4 py-2 rounded-xl text-xs font-mono text-emerald-400">
+                <CheckCircle2 size={14} className="text-emerald-400" />
+                <span>Impact Metric: <strong>{SLIDES[activeSlide].stat}</strong></span>
               </div>
-              <p className="text-sm text-slate-600 mb-3">Autopilot executing: Razorpay UPI link generated.</p>
-              <div className="flex space-x-2">
-                <button className="text-sm font-semibold text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-lg w-full cursor-default">
-                  Processing...
+
+              <div className="pt-2">
+                <button
+                  onClick={() => { setAuthMode('REGISTER'); setShowAuthModal(true); }}
+                  className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center shadow-lg transition hover:scale-105"
+                >
+                  Launch This Module <ChevronRight size={15} className="ml-1" />
                 </button>
-                <button className="text-sm font-semibold text-slate-500 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                  Halt
-                </button>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-slate-900">Priya Desai</span>
-                <span className="font-bold text-emerald-600">₹12,500</span>
+            {/* Interactive Preview Mock */}
+            <div className="lg:col-span-5 bg-black/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden shadow-inner">
+              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3 mb-4">
+                <span className="flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-2"></span>
+                  Live Telemetry Pipeline
+                </span>
+                <span className="font-mono text-blue-400">Razorpay Rails</span>
               </div>
-              <p className="text-sm text-slate-600 mb-3">Autopilot executing: Follow-up scheduled for tomorrow.</p>
-              <button className="text-sm font-semibold text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-lg w-full cursor-default">
-                Scheduled
-              </button>
+
+              <div className="space-y-3 font-sans text-xs">
+                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="text-slate-400 text-[10px] uppercase block">Customer Dossier</span>
+                  <span className="font-bold text-white">Rajesh Kumar • Apple AirPods Pro (₹4,650)</span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <span className="text-slate-400 text-[10px] uppercase block">Agent State</span>
+                    <span className="font-bold text-blue-400">Priya (Dialect: Kannada/Hindi/Eng)</span>
+                  </div>
+                  <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-mono text-[10px]">
+                    Verified
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="text-slate-400 text-[10px] uppercase block">Autonomous Action</span>
+                  <span className="font-bold text-emerald-400">T+0 Instant Reversal • UTR #904288192014</span>
+                </div>
+              </div>
             </div>
 
           </div>
+
+        </section>
+
+      </main>
+
+      {/* Professional Authentication Modal (Login / Register / OTP) */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-slate-100">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => { setShowAuthModal(false); setAuthSuccess(false); }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white text-xs font-mono p-1"
+            >
+              ✕ CLOSE
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mx-auto flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-blue-500/30 mb-3">
+                R
+              </div>
+              <h3 className="text-xl font-bold text-white">
+                {authSuccess 
+                  ? 'Authentication Successful!'
+                  : authMode === 'OTP_VERIFY' 
+                    ? 'Enter 6-Digit Verification Code' 
+                    : authMode === 'REGISTER' 
+                      ? 'Create Merchant Account' 
+                      : 'Sign in to RevenueOS'}
+              </h3>
+              <p className="text-slate-400 text-xs mt-1">
+                {authSuccess
+                  ? 'Redirecting to Revenue War Room...'
+                  : authMode === 'OTP_VERIFY'
+                    ? `We sent a security code to ${emailOrPhone}`
+                    : 'Access your autonomous revenue recovery workspace'}
+              </p>
+            </div>
+
+            {/* Success Animation */}
+            {authSuccess ? (
+              <div className="py-8 text-center space-y-3 animate-fade-in">
+                <div className="w-14 h-14 bg-emerald-950 border border-emerald-800 text-emerald-400 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                  <Check size={28} />
+                </div>
+                <p className="text-xs text-slate-300 font-medium">Session initialized. Opening War Room...</p>
+              </div>
+            ) : authMode === 'OTP_VERIFY' ? (
+              
+              /* OTP Form */
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block mb-2 text-center">
+                    Verification OTP
+                  </label>
+                  <div className="flex justify-center gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        maxLength={1}
+                        defaultValue={idx === 0 ? "7" : idx === 1 ? "4" : idx === 2 ? "2" : idx === 3 ? "9" : idx === 4 ? "0" : "1"}
+                        className="w-10 h-12 text-center text-lg font-bold bg-black border border-slate-800 rounded-xl text-white focus:border-blue-500 focus:outline-none"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-center text-slate-500 mt-2">
+                    Demo OTP autofilled: <strong>742901</strong>
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isVerifying}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isVerifying ? 'Verifying Code...' : 'Verify & Enter Workspace'}
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('LOGIN')}
+                    className="text-[11px] text-slate-400 hover:text-blue-400 transition"
+                  >
+                    ← Back to Login
+                  </button>
+                </div>
+              </form>
+
+            ) : (
+
+              /* Login / Register Form */
+              <div className="space-y-4">
+                
+                {/* Google & SSO Quick OAuth Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleOAuthLogin('Google')}
+                    className="py-2.5 px-3 rounded-xl bg-black border border-slate-800 hover:bg-slate-800 text-xs font-medium text-slate-200 flex items-center justify-center transition"
+                  >
+                    <Globe size={14} className="mr-2 text-red-400" />
+                    Google SSO
+                  </button>
+                  <button
+                    onClick={() => handleOAuthLogin('Razorpay')}
+                    className="py-2.5 px-3 rounded-xl bg-black border border-slate-800 hover:bg-slate-800 text-xs font-medium text-slate-200 flex items-center justify-center transition"
+                  >
+                    <ShieldCheck size={14} className="mr-2 text-blue-400" />
+                    Razorpay SSO
+                  </button>
+                </div>
+
+                <div className="flex items-center my-3">
+                  <div className="flex-1 border-t border-slate-800"></div>
+                  <span className="px-3 text-[10px] uppercase font-mono text-slate-500">Or continue with</span>
+                  <div className="flex-1 border-t border-slate-800"></div>
+                </div>
+
+                {/* Email / Phone Toggle */}
+                <div className="flex bg-black p-1 rounded-xl border border-slate-800 text-xs">
+                  <button
+                    onClick={() => setAuthMethod('EMAIL')}
+                    className={`flex-1 py-1.5 rounded-lg font-semibold transition ${
+                      authMethod === 'EMAIL' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Mail size={12} className="inline mr-1" /> Work Email
+                  </button>
+                  <button
+                    onClick={() => setAuthMethod('PHONE')}
+                    className={`flex-1 py-1.5 rounded-lg font-semibold transition ${
+                      authMethod === 'PHONE' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Smartphone size={12} className="inline mr-1" /> Mobile Number
+                  </button>
+                </div>
+
+                <form onSubmit={handleSendCode} className="space-y-3">
+                  {authMode === 'REGISTER' && (
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                        Full Name / Merchant Organization
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Rajesh Kumar"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full bg-black border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                      {authMethod === 'EMAIL' ? 'Work Email Address' : '10-Digit Mobile Number'}
+                    </label>
+                    <input
+                      type={authMethod === 'EMAIL' ? 'email' : 'tel'}
+                      required
+                      placeholder={authMethod === 'EMAIL' ? 'name@company.com' : '+91 98450 XXXXX'}
+                      value={emailOrPhone}
+                      onChange={(e) => setEmailOrPhone(e.target.value)}
+                      className="w-full bg-black border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVerifying}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition disabled:opacity-50 flex items-center justify-center mt-2"
+                  >
+                    {isVerifying ? 'Sending Security Code...' : 'Send Verification OTP →'}
+                  </button>
+                </form>
+
+                {/* Switch Login / Register */}
+                <div className="text-center pt-2 text-xs text-slate-400">
+                  {authMode === 'LOGIN' ? (
+                    <p>
+                      Don't have an account?{' '}
+                      <button
+                        onClick={() => setAuthMode('REGISTER')}
+                        className="text-blue-400 hover:underline font-semibold"
+                      >
+                        Register Free
+                      </button>
+                    </p>
+                  ) : (
+                    <p>
+                      Already registered?{' '}
+                      <button
+                        onClick={() => setAuthMode('LOGIN')}
+                        className="text-blue-400 hover:underline font-semibold"
+                      >
+                        Sign In
+                      </button>
+                    </p>
+                  )}
+                </div>
+
+              </div>
+
+            )}
+
+          </div>
+
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

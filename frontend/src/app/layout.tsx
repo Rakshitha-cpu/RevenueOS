@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import ChatWidget from '@/components/ChatWidget';
 
@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'RevenueOS | AI Recovery Orchestrator',
-  description: 'Built for Razorpay Hackathon',
+  description: 'Autonomous AI Payment Recovery & Telecalling Platform',
 };
 
 export default function RootLayout({
@@ -23,16 +23,16 @@ export default function RootLayout({
         {/* Global SaaS Sidebar */}
         <aside className="w-64 bg-slate-950 text-white hidden md:flex flex-col shadow-2xl border-r border-slate-800 z-20">
           
-          <div className="p-6 flex items-center space-x-3">
+          <Link href="/" className="p-6 flex items-center space-x-3 hover:opacity-90 transition">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-500/30">
               R
             </div>
             <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">RevenueOS</span>
-          </div>
+          </Link>
           
           <nav className="flex-1 px-4 py-6 space-y-1.5">
             <p className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Orchestration</p>
-            <Link href="/" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
+            <Link href="/war-room" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <LayoutDashboard size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">War Room</span>
             </Link>
             <Link href="/customer" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
@@ -52,9 +52,6 @@ export default function RootLayout({
             <Link href="/command-center" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Terminal size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Command Center</span>
             </Link>
-            <Link href="/about" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
-              <FileText size={18} className="group-hover:text-cyan-400 transition-colors" /> <span className="font-medium">System Overview (Print)</span>
-            </Link>
           </nav>
           
           <div className="p-6 border-t border-slate-900">
@@ -67,15 +64,12 @@ export default function RootLayout({
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-slate-50 relative">
-          {/* Subtle top gradient accent for SaaS feel */}
-          <div className="absolute top-0 w-full h-64 bg-gradient-to-b from-blue-50 to-transparent pointer-events-none"></div>
-          
-          <div className="relative z-10 p-4 md:p-8">
+          <div className="relative z-10 p-0">
             {children}
           </div>
         </main>
         
-        {/* Global Ask AI Chatbot Component */}
+        {/* Floating Global Chat Widget */}
         <ChatWidget />
       </body>
     </html>

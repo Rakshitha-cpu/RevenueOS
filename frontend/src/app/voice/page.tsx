@@ -760,15 +760,6 @@ export default function VoiceRecovery() {
 
         {/* Audio Toggle & Language Bar */}
         <div className="flex items-center space-x-2">
-          <a
-            href="/about"
-            target="_blank"
-            className="p-2 rounded-xl border text-xs flex items-center bg-slate-900 border-gray-800 text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 transition"
-            title="Open System Architecture & Print Dossier"
-          >
-            <FileText size={15} className="mr-1.5" />
-            System Docs (Print)
-          </a>
 
           <button
             onClick={() => setTtsEnabled(!ttsEnabled)}
