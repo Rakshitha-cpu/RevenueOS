@@ -131,8 +131,8 @@ export default function WhatIfSimulator() {
         </div>
       </div>
 
-      {/* Evaluator Verification Section: Strategy Learning Log & Risk Profile Model */}
-      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-6">
+      {/* Evaluator Verification Section: Collapsible Progressive Disclosure */}
+      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-4">
         
         {/* Live Deployment Trace */}
         {deployed && (
@@ -155,20 +155,25 @@ export default function WhatIfSimulator() {
           </div>
         )}
 
-        {/* Strategy Learning Log Table */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-            <h3 className="text-base font-bold text-gray-900 flex items-center">
-              <Zap className="text-blue-600 mr-2" size={18} />
-              Strategy Learning Log (What Broke & How We Fixed It)
-            </h3>
-            <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full font-mono">
-              Evaluator Proof
+        {/* Collapsible Strategy Learning Log Accordion */}
+        <details className="group bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
+          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-50 transition">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <Zap size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-900">Strategy Learning &amp; Failure Recovery Log</h4>
+                <p className="text-xs text-gray-500">Click to view how AI learned optimal channel routing vs. brute-force retries</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-blue-600 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Proof
             </span>
-          </div>
+          </summary>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="p-5 pt-0 border-t border-gray-100 overflow-x-auto">
+            <table className="w-full text-left text-xs font-sans mt-3">
               <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3">Initial Failure</th>
@@ -199,7 +204,7 @@ export default function WhatIfSimulator() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
       </div>
     </div>

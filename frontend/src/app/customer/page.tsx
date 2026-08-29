@@ -184,44 +184,54 @@ export default function CustomerProfile() {
         </div>
       </div>
 
-      {/* Evaluator Verification Section: AI Learning Log & Execution Trace */}
-      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-6">
+      {/* Evaluator Verification Section: Collapsible Progressive Disclosure */}
+      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-4">
         
-        {/* Execution Trace */}
-        <div className="bg-slate-900 border border-gray-800 rounded-2xl p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
-            <h3 className="text-base font-bold flex items-center">
-              <Activity className="text-blue-400 mr-2" size={18} />
-              Autonomous Pipeline Execution Trace (Customer: CUST-98214)
-            </h3>
-            <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-0.5 rounded-full font-mono">
-              Live Webhook Trace
+        {/* Collapsible Execution Trace Accordion */}
+        <details className="group bg-slate-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-200 text-white">
+          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-800/60 transition">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-950 text-blue-400 rounded-xl border border-blue-900">
+                <Activity size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Autonomous Pipeline Execution Trace (Customer: CUST-98214)</h4>
+                <p className="text-xs text-gray-400">Click to view 5-stage automated recovery from failure detection to settlement</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-blue-400 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Trace
             </span>
-          </div>
+          </summary>
 
-          <div className="space-y-2 font-mono text-xs text-gray-300">
+          <div className="p-5 pt-3 border-t border-gray-800/80 space-y-2 font-mono text-xs text-gray-300">
             <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:52]</span> <span className="text-blue-400">DETECTOR:</span> <span>Ingested payment failure on Order #RZP-8921 (₹7,999, Card Network Timeout E_504)</span></div>
             <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:54]</span> <span className="text-purple-400">DOSSIER:</span> <span>Evaluated Rahul Sharma history (12 success, 1 card decline, UPI propensity: 82%)</span></div>
             <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:56]</span> <span className="text-yellow-400">POLICY:</span> <span>PolicyGuard check: Risk score 12% (&lt;85 threshold) ➔ Approved 1-Tap UPI WhatsApp Rail</span></div>
             <div className="flex items-start space-x-2"><span className="text-gray-500">[10:42:01]</span> <span className="text-emerald-400">DISPATCH:</span> <span>Generated secure Razorpay deep link: <code className="text-blue-300">https://rzp.io/i/7xF81Lm</code> (Delivered via WhatsApp API)</span></div>
             <div className="flex items-start space-x-2"><span className="text-gray-500">[10:42:15]</span> <span className="text-emerald-400">SETTLED:</span> <span>Customer completed UPI payment ➔ Recovered ₹7,999 revenue in 23 seconds!</span></div>
           </div>
-        </div>
+        </details>
 
-        {/* AI Learning Log Table */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-            <h3 className="text-base font-bold text-gray-900 flex items-center">
-              <Cpu className="text-blue-600 mr-2" size={18} />
-              AI Learning & Failure Recovery Log (What Broke & How We Fixed It)
-            </h3>
-            <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full font-mono">
-              Evaluator Proof
+        {/* Collapsible AI Learning Log Accordion */}
+        <details className="group bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
+          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-50 transition">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <Cpu size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-900">AI Learning &amp; Failure Recovery Log (What Broke & How We Fixed It)</h4>
+                <p className="text-xs text-gray-500">Click to view machine learning threshold adjustments and fraud shielding</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-blue-600 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Proof
             </span>
-          </div>
+          </summary>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="p-5 pt-0 border-t border-gray-100 overflow-x-auto">
+            <table className="w-full text-left text-xs font-sans mt-3">
               <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3">Initial Failure</th>
@@ -252,7 +262,7 @@ export default function CustomerProfile() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
       </div>
     </div>
