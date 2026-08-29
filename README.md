@@ -1,8 +1,15 @@
 <div align="center">
   <img src="https://razorpay.com/assets/razorpay-logo.svg" alt="Razorpay" width="200"/>
   <h1>🚀 RevenueOS</h1>
-  <p><b>Autonomous Revenue Recovery Orchestrator</b></p>
-  <p><i>Built for the Razorpay Hackathon</i></p>
+  <p><b>Autonomous Revenue Recovery & Orchestration Ecosystem</b></p>
+  <p><i>Enterprise-grade, Safe AI Platform for Real-time Payment Recovery</i></p>
+
+  [![CI/CD Pipeline](https://github.com/Rakshitha-cpu/RevenueOS/actions/workflows/ci.yml/badge.svg)](https://github.com/Rakshitha-cpu/RevenueOS/actions)
+  [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
+  [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+  [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
 </div>
 
 ---
@@ -14,23 +21,12 @@ Merchants lose up to **15% of their total revenue** due to failed payments, card
 **RevenueOS** is an autonomous AI agent ecosystem built natively on top of Razorpay. 
 It detects failed payments in real-time, uses LLMs to analyze customer historical data, simulates the optimal recovery strategy (Expected Recovery vs. Customer Friction), and automatically generates Razorpay Payment Links or UPI prompts to recover the funds.
 
-Most importantly, RevenueOS is built on a **"Safe AI" Architecture**:
+### 🛡️ Enterprise "Safe AI" Architecture
 * **LLMs NEVER Calculate Math:** The LLM *never* computes amounts, fees, or authorizes payments. All numeric fields are derived from a deterministic pricing engine and validated before hitting Razorpay.
-* **Bounded NLP:** The Multilingual Voice agent does not give open-ended financial advice. It strictly performs *Intent Classification* (e.g., `PROMISE_TO_PAY`, `ALTERNATIVE_METHOD`) on heavily code-switched Indian dialects (Hinglish, Tanglish).
-* **Deterministic Policy Guards:** The AI operates in a sandbox. All execution is gated by a deterministic policy engine with explicit stopping rules, solving the "AI Hallucination" problem for enterprise fintech.
-
----
-
-## 🏆 Hackathon "Wow" Factors & Core Features
-
-- 🛡️ **Explicit Stopping Rules & Guardrails**: 
-  - **Amount Caps:** No autonomous action above ₹50,000 per transaction.
-  - **Rate Limits:** Max 3 automated Payment Links per customer per 24 hours.
-  - **Irreversibility:** High-impact actions (fraud flags, dispute status changes) *always* require human approval via the War Room.
-- 🗣️ **Multilingual Voice Intent**: Integrates Gemini 2.5 Flash to extract structured JSON payment intent from unstructured audio across **6 Indian Languages**. If ASR confidence drops < 0.6, it auto-escalates to a human.
-- 🧮 **What-If Simulator**: A mathematical engine that ranks AI recovery strategies by penalizing high-friction approaches, ensuring the best customer experience.
-- 📈 **Measured Batch Recovery**: The Command Center tracks the exact baseline vs. uplift (e.g. baseline 18% recovery vs 31% with RevenueOS), proving measured money recovered across a batch.
-- 💻 **Live Terminal Audit Trail**: Every webhook payload, risk diagnosis, policy check (ALLOW/BLOCK), and execution result is logged in real-time for compliance.
+* **Bounded NLP Intent Extraction:** The Multilingual Voice agent does not give open-ended financial advice. It strictly performs *Intent Classification* (`PROMISE_TO_PAY`, `ALTERNATIVE_METHOD`, `OPT_OUT`) across **6 Indian Languages** (English, Hindi, Kannada, Tamil, Telugu, Malayalam).
+* **Deterministic Policy Firewall:** The AI operates in a sandbox. All execution is gated by a deterministic policy engine with explicit stopping rules, preventing financial hallucinations.
+* **Cryptographic Webhook Integrity:** Verifies Razorpay HMAC SHA-256 signatures on every incoming event.
+* **Enterprise Secrets & Observability:** Structured JSON Logging with singleton Configuration Management ready for Cloud Secret Managers.
 
 ---
 
@@ -38,46 +34,90 @@ Most importantly, RevenueOS is built on a **"Safe AI" Architecture**:
 
 ```mermaid
 graph TD
-    A[Razorpay Webhook: payment.failed] -->|Trigger| B[Risk Intelligence Agent]
-    B -->|Context & Persona| C[What-If Strategy Simulator]
-    C -->|Proposed Action| D{Policy Guardrail Engine}
-    D -- Threshold Exceeded --> E[🚨 Escalate to Human Dashboard]
-    D -- Safe & Authorized --> F[Razorpay Execution Engine]
-    F --> G[Generate Razorpay Payment Link / UPI]
-    G --> H[Notify Customer via SMS/Email]
+    A[Razorpay Webhook: payment.failed] -->|HMAC SHA-256 Verify| B[Risk Intelligence Agent]
+    B -->|Context & Failure Diagnosis| C[What-If Strategy Simulator]
+    C -->|GenAI Structured Proposal| D{Deterministic Policy Guard}
+    D -- Policy Violations / Limits Exceeded --> E[🚨 Human War Room Escalation]
+    D -- Safe & Authorized --> F[Razorpay Execution Adapter]
+    F --> G[Generate Razorpay Payment Link / UPI Intent]
+    G --> H[Audited Database Record & WhatsApp Notification]
 ```
+
+---
+
+## 🏆 Core Features
+
+- 🛡️ **Explicit Stopping Rules & Policy Guard**: 
+  - **Amount Caps:** Autonomous action ceiling of ₹50,000 per transaction.
+  - **Rate Limits:** Maximum 3 automated outreach actions per customer per 24h.
+  - **Irreversibility:** High-impact actions (refunds, disputes) require human approval.
+- 🗣️ **Multilingual Voice Intent Agent**: Integrates Gemini 2.5 Flash with deterministic multilingual fallbacks for Indian languages.
+- 🧮 **What-If Impact Simulator**: Mathematical scoring engine balancing Expected Recovery against Customer Friction Penalties and Risk Penalties.
+- 📈 **Measured Batch Recovery Uplift**: Real-time metrics dashboard proving measured recovery rates (Baseline 18% vs. RevenueOS 31.4%).
+- 🗄️ **Persistent Audit Trail & ORM**: Real-time audit timeline backed by SQLAlchemy models and PostgreSQL.
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
-- **Next.js 14** (React, App Router)
-- **Tailwind CSS** (Premium Glassmorphism & Gradients)
-- **Recharts** (Data Visualization)
-- **Lucide Icons**
-
-**Backend:**
-- **FastAPI** (High-performance asynchronous Python)
-- **Google Gemini 2.5 Flash API** (Core LLM Reasoning & Multilingual NLP)
-- **Razorpay Python SDK** (Payment Links & Webhooks verification)
-- **Pydantic** (Strict JSON Schema validation)
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 16 (App Router), TypeScript, Tailwind CSS, Recharts, Lucide Icons |
+| **Backend** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy ORM, Alembic Migrations |
+| **AI / NLP** | Google Gemini 2.5 Flash (Structured Outputs & Multilingual NLU) |
+| **Payments** | Razorpay Python SDK, Webhooks HMAC SHA-256 Verification |
+| **DevOps** | Docker, Docker Compose, GitHub Actions CI/CD, Pytest, Flake8 |
 
 ---
 
-## 🚀 How to Run Locally
+## 🧪 Comprehensive Automated Testing
+
+RevenueOS includes extensive automated test suites covering core business logic, API endpoints, mock external services, and policy guardrails:
+
+```bash
+# Run all backend unit and integration tests
+cd backend
+pytest tests/ -v --cov=app --cov-report=term-missing
+```
+
+### Test Suite Structure:
+- `tests/test_policy_engine.py`: Verifies amount caps, retry thresholds, refund blocking.
+- `tests/test_risk_engine.py`: Validates risk classification and recovery scoring.
+- `tests/test_simulator.py`: Tests friction and risk penalty mathematical calculations.
+- `tests/test_recovery_agent.py`: Mocks external Gemini LLM APIs for deterministic agent testing.
+- `tests/test_voice_agent.py`: Tests 6-language multilingual intent extraction and fallbacks.
+- `tests/test_execution_engine.py`: Tests live Razorpay execution and simulated sandboxes.
+- `tests/test_audit.py`: Validates in-memory and PostgreSQL database logging persistence.
+- `tests/test_models.py`: Validates SQLAlchemy ORM database models.
+- `tests/test_config.py`: Validates singleton Enterprise Configuration Manager.
+- `tests/test_all_endpoints.py`: Integration tests for all FastAPI router endpoints.
+
+---
+
+## 🐳 Docker Deployment
+
+Run the complete multi-container stack with a single command:
+
+```bash
+# Build and run backend + frontend containers
+docker-compose up --build
+```
+
+---
+
+## 🚀 Local Development Setup
 
 ### 1. Start the FastAPI Backend
 ```bash
 cd backend
 python -m venv venv
-source venv/Scripts/activate  # (Windows)
+source venv/Scripts/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Start Server
 uvicorn app.main:app --reload
 ```
-*Backend runs on `http://127.0.0.1:8000` with Swagger UI at `/docs`.*
+*Backend runs on `http://127.0.0.1:8000` with interactive Swagger docs at `/docs`.*
 
 ### 2. Start the Next.js Frontend
 ```bash
@@ -87,14 +127,15 @@ npm run dev
 ```
 *Frontend runs on `http://localhost:3000`.*
 
-### 3. Environment Variables (`backend/.env`)
+### 3. Environment Configuration (`backend/.env`)
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 RAZORPAY_KEY_ID=your_razorpay_key
 RAZORPAY_KEY_SECRET=your_razorpay_secret
 RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/revenueos
 ```
-*(Note: RevenueOS includes a deterministic fallback mode. If API keys are absent, it will run simulated mocks so the demo never crashes on stage!)*
+*(RevenueOS includes safe offline fallbacks. If API keys are omitted, it operates in simulated mode without errors!)*
 
 ---
 
