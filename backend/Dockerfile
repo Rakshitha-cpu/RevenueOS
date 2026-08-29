@@ -1,25 +1,7 @@
-# Build stage
-FROM python:3.11-slim as builder
-
+FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
-
-# Final production stage
-FROM python:3.11-slim
-
-WORKDIR /app
-# Copy wheels from builder stage to keep image size small
-COPY --from=builder /app/wheels /wheels
-COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache /wheels/*
-
-# Copy application code
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-
-# Expose port and run non-root
 EXPOSE 8000
-RUN useradd -m appuser && chown -R appuser /app
-USER appuser
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

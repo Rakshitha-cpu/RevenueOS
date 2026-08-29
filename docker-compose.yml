@@ -1,26 +1,22 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    container_name: revenueos_db
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
     environment:
-      POSTGRES_USER: revenueos
-      POSTGRES_PASSWORD: revenueos_password
-      POSTGRES_DB: revenueos_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: always
 
-  redis:
-    image: redis:7
-    container_name: revenueos_redis
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: always
