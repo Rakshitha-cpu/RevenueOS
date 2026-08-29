@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw, Database } from 'lucide-react';
 import Link from 'next/link';
 import ChatWidget from '@/components/ChatWidget';
 
@@ -34,6 +34,9 @@ export default function RootLayout({
             <p className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Orchestration</p>
             <Link href="/war-room" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <LayoutDashboard size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">War Room</span>
+            </Link>
+            <Link href="/batch-evaluation" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
+              <Database size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Batch Proof (50 Txns)</span>
             </Link>
             <Link href="/customer" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Users size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">Customer Profile</span>
