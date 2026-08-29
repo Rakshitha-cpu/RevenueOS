@@ -151,7 +151,7 @@ export default function WarRoomDashboard() {
                   <span className="font-mono">2m ago</span>
                 </div>
                 <p className="font-bold text-slate-900">T+0 Instant Refund Dispatched</p>
-                <span className="text-[11px] text-blue-600 font-semibold">UTR #904288192014 (<2.2s)</span>
+                <span className="text-[11px] text-blue-600 font-semibold">UTR #904288192014 (&lt;2.2s)</span>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
