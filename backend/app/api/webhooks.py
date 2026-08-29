@@ -4,6 +4,7 @@ import hmac
 import hashlib
 import json
 from app.services.audit import audit_logger
+from app.services.downtime_engine import downtime_engine
 from app.logger import app_logger
 
 router = APIRouter()
@@ -13,7 +14,7 @@ RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 @router.post("/razorpay")
 async def razorpay_webhook(request: Request, x_razorpay_signature: str = Header(None)):
     """
-    Listens for Razorpay events (e.g., payment.captured, payment_link.paid).
+    Listens for Razorpay events (e.g., payment.captured, payment_link.paid, payment.downtime.started).
     Closes the loop by marking the revenue as successfully recovered in the RevenueOS system.
     """
     payload_body = await request.body()
@@ -63,5 +64,37 @@ async def razorpay_webhook(request: Request, x_razorpay_signature: str = Header(
             metadata={"amount_recovered": amount, "event_source": event}
         )
         app_logger.info(f"Successfully recovered revenue for reference: {ref_id}")
+
+    # 4. Handle Bank Network Downtime Events (Smart Rerouting)
+    elif event == "payment.downtime.started":
+        downtime_entity = payload.get("payload", {}).get("downtime", {}).get("entity", {})
+        bank = downtime_entity.get("source", "HDFC").upper()
+        instrument = downtime_entity.get("instrument", "netbanking")
+        downtime_engine.record_downtime(bank, instrument)
+        
+        audit_logger.log_event(
+            entity_type="BankingNetwork",
+            entity_id=bank,
+            event_type="DOWNTIME_DETECTED",
+            actor="Razorpay Network Monitor",
+            description=f"Bank network outage detected for {bank} ({instrument}). Active smart rerouting engaged.",
+            metadata={"bank": bank, "instrument": instrument}
+        )
+        app_logger.warning(f"Bank outage logged: {bank}")
+
+    elif event == "payment.downtime.resolved":
+        downtime_entity = payload.get("payload", {}).get("downtime", {}).get("entity", {})
+        bank = downtime_entity.get("source", "HDFC").upper()
+        downtime_engine.resolve_downtime(bank)
+        
+        audit_logger.log_event(
+            entity_type="BankingNetwork",
+            entity_id=bank,
+            event_type="DOWNTIME_RESOLVED",
+            actor="Razorpay Network Monitor",
+            description=f"Bank network normal operation restored for {bank}.",
+            metadata={"bank": bank}
+        )
+        app_logger.info(f"Bank outage resolved: {bank}")
 
     return {"status": "ok"}
