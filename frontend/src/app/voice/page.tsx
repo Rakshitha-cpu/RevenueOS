@@ -86,7 +86,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
 export default function VoiceRecovery() {
   const [selectedLang, setSelectedLang] = useState<LanguageOption>(SUPPORTED_LANGUAGES[0]); // Default English
   const [callState, setCallState] = useState<'IDLE' | 'LISTENING' | 'ANALYZING' | 'AI_SPEAKING'>('IDLE');
-  const [callDuration, setCallDuration] = useState(18);
+  const [callDuration, setCallDuration] = useState(12);
   const [currentSpokenText, setCurrentSpokenText] = useState("");
   const [conversationHistory, setConversationHistory] = useState<MessageTurn[]>([
     {
@@ -107,24 +107,27 @@ export default function VoiceRecovery() {
   const recognitionRef = useRef<any>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // When language changes, update greeting if at start of call
+  // Switch Language & Reset Call cleanly with zero phantom messages
   const handleLanguageChange = (lang: LanguageOption) => {
     setSelectedLang(lang);
-    if (callState === 'LISTENING') finishSpeakingAndAnalyze();
-    
-    // Automatically switch opening greeting to match the selected language
-    setConversationHistory(prev => {
-      if (prev.length <= 1) {
-        return [{
-          id: `msg-${Date.now()}`,
-          role: 'agent',
-          text: lang.initialGreeting,
-          timestamp: formatCallTime(callDuration),
-          lang: lang.name
-        }];
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch(e){}
+    }
+    setCallState('IDLE');
+    setCurrentSpokenText("");
+    setParsedIntent(null);
+    setShowWhatsAppPopup(false);
+
+    // Set exactly 1 opening greeting in the selected language
+    setConversationHistory([
+      {
+        id: `msg-${Date.now()}`,
+        role: 'agent',
+        text: lang.initialGreeting,
+        timestamp: formatCallTime(callDuration),
+        lang: lang.name
       }
-      return prev;
-    });
+    ]);
   };
 
   // Call timer interval
@@ -146,7 +149,7 @@ export default function VoiceRecovery() {
     return `${mins.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`;
   };
 
-  // Speak AI Audio response in the selected Indian language
+  // Speak AI Audio response
   const speakAIResponse = (text: string, langCode: string, onFinish?: () => void) => {
     if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       if (onFinish) onFinish();
@@ -216,7 +219,7 @@ export default function VoiceRecovery() {
     }
   };
 
-  // Step 2: User explicitly finishes speaking or clicks "Done Speaking"
+  // Step 2: User explicitly finishes speaking
   const finishSpeakingAndAnalyze = () => {
     if (recognitionRef.current) {
       try {
@@ -225,7 +228,10 @@ export default function VoiceRecovery() {
     }
 
     const textToProcess = currentSpokenText.trim();
-    if (!textToProcess) {
+    
+    // If user said nothing, DO NOT create an AI response!
+    if (!textToProcess || textToProcess.length < 2) {
+      setCurrentSpokenText("");
       setCallState('IDLE');
       return;
     }
@@ -269,7 +275,25 @@ export default function VoiceRecovery() {
     processTurn(textToProcess, updatedHistory);
   };
 
-  // Step 4: Multi-Turn Intent & Sequential Response Generation
+  // Step 4: Sample Prompt trigger (Always creates Customer turn first!)
+  const handleSamplePromptClick = () => {
+    if (callState !== 'IDLE') return;
+
+    const sample = selectedLang.samplePhrase;
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: sample,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
+    };
+
+    const updatedHistory = [...conversationHistory, customerMsg];
+    setConversationHistory(updatedHistory);
+    processTurn(sample, updatedHistory);
+  };
+
+  // Step 5: Multi-Turn Intent & Sequential Response Generation
   const processTurn = async (text: string, currentHistory: MessageTurn[]) => {
     setCallState('ANALYZING');
     
@@ -594,10 +618,7 @@ export default function VoiceRecovery() {
 
               {/* One-Click Sample Prompt to Test */}
               <button
-                onClick={() => {
-                  setCurrentSpokenText(selectedLang.samplePhrase);
-                  processTurn(selectedLang.samplePhrase, conversationHistory);
-                }}
+                onClick={handleSamplePromptClick}
                 disabled={callState !== 'IDLE'}
                 className="px-3 py-3 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-gray-800 rounded-xl text-xs font-semibold shrink-0 transition disabled:opacity-50"
                 title="Simulate sample prompt"
