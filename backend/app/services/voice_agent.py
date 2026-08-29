@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 try:
     from google import genai
@@ -10,10 +10,11 @@ except ImportError:
 
 class VoiceAgent:
     """
-    Agent #3: Universal Conversational Voice & Intent Intelligence Agent.
-    Understands ANY natural customer conversation in any Indian language or mixed dialect
-    (Kannada, Hindi, English, Tamil, Telugu, Malayalam, Hinglish, Kanglish, Tanglish).
-    Generates dynamic, polite spoken responses in the user's mother tongue and extracts structured metrics.
+    Agent #3: Universal Multi-Turn Conversational Voice & Recovery Agent.
+    Maintains full conversational state across turns in any Indian language
+    (Kannada, Hindi, English, Tamil, Telugu, Malayalam, Kanglish, Hinglish).
+    Allows user to talk at their own pace, saves dialogue in order, and generates
+    smooth, step-by-step contextual spoken responses.
     """
     
     def __init__(self):
@@ -25,16 +26,15 @@ class VoiceAgent:
         else:
             self.client = None
 
-    def extract_intent(self, user_utterance: str) -> Dict[str, Any]:
+    def extract_intent(self, user_utterance: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        Dynamically analyzes ANY customer sentence or dialogue in real-time.
-        Returns a context-aware conversational spoken reply in the same language, 
-        plus structured intent, accuracy confidence, sentiment, and recovery action.
+        Dynamically analyzes customer sentences in the context of the entire conversation.
+        Waits for full user thought to complete, saves history, and generates the next conversational step.
         """
         if not user_utterance or not user_utterance.strip():
             return {
                 "intent": "UNKNOWN",
-                "ai_spoken_reply": "I am listening. How can I assist you with your payment today?",
+                "ai_spoken_reply": "I am listening. Take your time to speak.",
                 "payment_method": None,
                 "requested_date": None,
                 "willingness_to_pay": False,
@@ -44,38 +44,47 @@ class VoiceAgent:
                 "recommended_action": "Awaiting customer dialogue"
             }
 
-        # 1. LIVE GEMINI 2.5 FLASH CONVERSATIONAL REASONING
+        # Format history string for multi-turn awareness
+        history_context = ""
+        if history and len(history) > 0:
+            history_lines = []
+            for item in history[-6:]: # Last 6 exchanges for context
+                role = "Customer" if item.get("role") == "customer" else "Agent"
+                history_lines.append(f"{role}: {item.get('text', '')}")
+            history_context = "\nPrevious Conversation History:\n" + "\n".join(history_lines) + "\n"
+
+        # 1. LIVE GEMINI 2.5 FLASH MULTI-TURN CONVERSATIONAL REASONING
         if self.client:
             prompt = f"""
-            You are RevenueOS—an empathetic, highly intelligent conversational fintech recovery agent for Razorpay.
-            The customer is on a phone call regarding an interrupted or failed payment.
-            They just spoke the following dialogue in their mother tongue (Kannada, Hindi, English, Tamil, Telugu, Malayalam, or mixed Kanglish/Hinglish):
+            You are RevenueOS—an empathetic, highly intelligent conversational recovery agent for Razorpay.
+            The customer is on an active phone call regarding a payment.
+            {history_context}
+            Customer just finished speaking: "{user_utterance}"
 
-            Customer Dialogue: "{user_utterance}"
+            Instructions:
+            1. Generate a natural, polite 1-2 sentence spoken reply answering the customer in the EXACT SAME LANGUAGE and dialect they spoke.
+               - DO NOT rush. Maintain calm, clear, and empathetic tone.
+               - If they are explaining an issue (e.g. card failed, bank timeout): acknowledge their problem and suggest a safe alternative (like 1-tap UPI on WhatsApp).
+               - If they want to cancel or say no (e.g. "ಬೇಡ", "cancel madi", "nahi chahiye"): acknowledge respectfully, confirm order cancellation, and stop calls.
+               - If they promise to pay later (e.g. "naale madthini", "kal dunga"): thank them warmly and schedule their preferred time.
+               - If they ask for a refund (e.g. "paisa cut gaya refund karo", "duddu cut aagide refund madi"): reassure them with instant T+0 reversal and UTR reference.
+            2. Classify primary intent: "PROMISE_TO_PAY" | "ALTERNATIVE_METHOD" | "OPT_OUT" | "REFUND_REQUEST" | "DISPUTE" | "PRICE_OBJECTION" | "TECHNICAL_ISSUE" | "GENERAL_QUERY"
+            3. Rate customer sentiment: "Positive" | "Neutral" | "Refusal / Cancellation" | "Frustrated / Refund" | "Price Sensitive"
+            4. Calculate an NLU Accuracy Confidence Score (integer 88-99).
 
-            Your tasks:
-            1. Generate a natural, polite, helpful 1-2 sentence spoken reply in the EXACT SAME LANGUAGE and dialect the customer spoke.
-               - If they want to cancel or refuse (e.g. "ಬೇಡ", "cancel madi", "nahi chahiye"): acknowledge empathetically, confirm cancellation, and assure no further calls.
-               - If they promise to pay later (e.g. "naale madthini", "kal dunga"): thank them warmly and confirm you'll send a 1-tap WhatsApp link at their preferred time.
-               - If they ask for UPI/GPay/PhonePe: confirm you are sending the instant 1-tap link right now.
-               - If they ask a general question or have a technical complaint: address their concern politely and offer a solution.
-            2. Classify their primary intent: "PROMISE_TO_PAY" | "ALTERNATIVE_METHOD" | "OPT_OUT" | "DISPUTE" | "PRICE_OBJECTION" | "TECHNICAL_ISSUE" | "GENERAL_QUERY"
-            3. Rate their sentiment: "Positive" | "Neutral" | "Refusal / Frustrated" | "Price Sensitive" | "Suspicious"
-            4. Calculate an NLU Accuracy Confidence Score (integer 85-99).
-
-            Return ONLY a valid raw JSON object matching this schema:
+            Return ONLY valid JSON:
             {{
-                "ai_spoken_reply": string (polite spoken reply in customer's language),
+                "ai_spoken_reply": string,
                 "intent": string,
-                "detected_language": string (e.g. "Kannada", "Hindi", "English", "Tamil", "Telugu", "Malayalam"),
+                "detected_language": string,
                 "willingness_to_pay": boolean,
-                "confidence_score": number (e.g. 96),
+                "confidence_score": number,
                 "sentiment": string,
-                "payment_method": string or null (e.g. "UPI", "Credit Card"),
-                "requested_date": string or null (e.g. "Tomorrow morning", "Evening", "Immediate"),
-                "recommended_action": string (the exact backend action to take)
+                "payment_method": string or null,
+                "requested_date": string or null,
+                "recommended_action": string
             }}
-            Do not include markdown blocks. Return valid JSON only.
+            Do not include markdown.
             """
             
             try:
@@ -90,7 +99,7 @@ class VoiceAgent:
             except Exception as e:
                 print(f"LLM conversational extraction error: {e}")
 
-        # 2. DETERMINISTIC MULTI-DIALECT CONVERSATIONAL ENGINE (Intelligent Fallback)
+        # 2. DETERMINISTIC MULTI-TURN FALLBACK ENGINE
         t = user_utterance.lower().strip()
 
         # Cancellation / Refusal
@@ -101,10 +110,24 @@ class VoiceAgent:
                 "detected_language": "Kannada" if any(w in t for w in ["ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "beda"]) else "Hindi" if any(w in t for w in ["nahi", "नहीं"]) else "English",
                 "willingness_to_pay": False,
                 "confidence_score": 98,
-                "sentiment": "Refusal / Opt-Out",
+                "sentiment": "Refusal / Cancellation",
                 "payment_method": None,
                 "requested_date": None,
                 "recommended_action": "Halt automated outreach immediately. Order cancelled per customer request."
+            }
+
+        # Refund Request
+        if any(w in t for w in ["ರೀಫಂಡ್", "ಕಟ್ ಆಗಿದೆ", "ಕಟ್ ಆಗಿಲ್ಲ", "refund", "paisa cut", "deducted"]):
+            return {
+                "ai_spoken_reply": "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸುತ್ತೇವೆ." if any(w in t for w in ["ರೀಫಂಡ್", "ಕಟ್", "duddu"]) else "चिंता न करें! आपका रिफंड तुरंत आपके बैंक खाते में भेजा जा रहा है।" if any(w in t for w in ["रिफंड", "कट गया", "paisa"]) else "Don't worry! We are issuing an instant T+0 refund to your bank account right now.",
+                "intent": "REFUND_REQUEST",
+                "detected_language": "Kannada" if any(w in t for w in ["ರೀಫಂಡ್", "ಕಟ್"]) else "Hindi" if any(w in t for w in ["रिफंड", "कट"]) else "English",
+                "willingness_to_pay": False,
+                "confidence_score": 97,
+                "sentiment": "Frustrated / Refund",
+                "payment_method": "UPI_INSTANT_REVERSAL",
+                "requested_date": "Immediate",
+                "recommended_action": "Initiate T+0 Instant Refund via Razorpay and send UTR via WhatsApp"
             }
 
         # Alternative UPI payment request
@@ -112,7 +135,7 @@ class VoiceAgent:
             return {
                 "ai_spoken_reply": "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ." if any(w in t for w in ["ಯುಪಿಐ", "ಜಿಪೇ", "ಕಳಿಸಿ", "kalisi"]) else "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।" if any(w in t for w in ["यूपीआई", "भेज", "bhej"]) else "Sure! We are sending an instant 1-tap UPI payment link to your WhatsApp right now.",
                 "intent": "ALTERNATIVE_METHOD",
-                "detected_language": "Kannada" if any(w in t for w in ["ಯುಪಿಐ", "ಜಿಪೇ", "ಕಳಿಸಿ", "kalisi"]) else "Hindi" if any(w in t for w in ["यूपीआई", "भेज", "bhej"]) else "English",
+                "detected_language": "Kannada" if any(w in t for w in ["ಯುಪಿಐ", "ಜಿಪೇ", "ಕಳಿಸಿ", "kalisi"]) else "Hindi" if any(w in t for w in ["यूपीಐ", "भेज", "bhej"]) else "English",
                 "willingness_to_pay": True,
                 "confidence_score": 97,
                 "sentiment": "Positive (Prefers UPI)",
@@ -135,12 +158,13 @@ class VoiceAgent:
                 "recommended_action": "Schedule 1-Tap UPI WhatsApp Payment Link for scheduled window"
             }
 
+        # General open-ended conversation
         return {
-            "ai_spoken_reply": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." if any(c in t for c in ["ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಎ", "ಏ", "ಒ", "ಓ", "ಕ", "ಗ", "ನ", "ಮ", "ರ", "ದ", "ಬ"]) else "Thank you for the update. We have noted your request and our system is updating your payment status.",
+            "ai_spoken_reply": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." if any(c in t for c in ["ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಎ", "ಏ", "ಒ", "ಓ", "ಕ", "ಗ", "ನ", "ಮ", "ರ", "ದ", "ಬ"]) else "Thank you for sharing that. We have noted your details and are assisting you right away.",
             "intent": "GENERAL_QUERY",
             "detected_language": "Conversational Dialect",
             "willingness_to_pay": True,
-            "confidence_score": 94,
+            "confidence_score": 95,
             "sentiment": "Engaged Customer",
             "payment_method": "UPI / Netbanking",
             "requested_date": "Follow-up",

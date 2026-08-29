@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Mic, MicOff, Activity, ShieldCheck, Languages, ArrowRight, Zap, Play, Send, 
-  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, QrCode, Sparkles, Gauge 
+  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, 
+  Sparkles, Gauge, Trash2, CheckCircle2, User, Bot, RotateCcw
 } from 'lucide-react';
 
 interface LanguageOption {
@@ -13,6 +14,15 @@ interface LanguageOption {
   samplePhrase: string;
   ttsPromiseResponse: string;
   ttsCancelResponse: string;
+}
+
+interface MessageTurn {
+  id: string;
+  role: 'customer' | 'agent';
+  text: string;
+  timestamp: string;
+  lang: string;
+  intent?: string;
 }
 
 const SUPPORTED_LANGUAGES: LanguageOption[] = [
@@ -34,7 +44,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
   },
   { 
     code: 'en-IN', 
-    name: 'English (India)', 
+    name: 'English', 
     nativeName: 'English', 
     samplePhrase: 'My card failed. Can you send a UPI payment link on WhatsApp?',
     ttsPromiseResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.',
@@ -45,7 +55,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Tamil', 
     nativeName: 'தமிழ்', 
     samplePhrase: 'கார்டு வேலை செய்யவில்லை, நாளைக்கு ஜிபே மூலமா பணம் கட்டுகிறேன்',
-    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிಐ கட்டண இணைப்பை அனுப்புகிறோம்.',
+    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிஐ கட்டண இணைப்பை அனுப்புகிறோம்.',
     ttsCancelResponse: 'சரி, உங்கள் கோரிக்கையின்படி ஆர்டர் ரத்து செய்யப்பட்டது.'
   },
   { 
@@ -61,38 +71,47 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Malayalam', 
     nativeName: 'മലയാളം', 
     samplePhrase: 'കാർഡ് വർക്കാവുന്നില്ല, നാളെ രാവിലെ ഗൂഗിൾ പേ വഴി തരാം',
-    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിಐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
+    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
     ttsCancelResponse: 'ശരി, നിങ്ങളുടെ അഭ്യർത്ഥന പ്രകാരം ഓർഡർ റദ്ദാക്കി.'
   }
 ];
 
 export default function VoiceRecovery() {
   const [selectedLang, setSelectedLang] = useState<LanguageOption>(SUPPORTED_LANGUAGES[0]); // Default Kannada
-  const [isListening, setIsListening] = useState(false);
-  const [isCallActive, setIsCallActive] = useState(true);
-  const [callDuration, setCallDuration] = useState(14);
-  const [transcript, setTranscript] = useState("");
-  const [aiSpokenResponse, setAiSpokenResponse] = useState<string>("");
+  const [callState, setCallState] = useState<'IDLE' | 'LISTENING' | 'ANALYZING' | 'AI_SPEAKING'>('IDLE');
+  const [callDuration, setCallDuration] = useState(18);
+  const [currentSpokenText, setCurrentSpokenText] = useState("");
+  const [conversationHistory, setConversationHistory] = useState<MessageTurn[]>([
+    {
+      id: "msg-0",
+      role: "agent",
+      text: "ನಮಸ್ಕಾರ! Razorpay ನಿಂದ ಕರೆ ಮಾಡುತ್ತಿದ್ದೇವೆ. ನಿಮ್ಮ ಪಾವತಿ ಪೂರ್ಣಗೊಳಿಸಲು ನಾವು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+      timestamp: "00:02",
+      lang: "ಕನ್ನಡ"
+    }
+  ]);
+  
   const [parsedIntent, setParsedIntent] = useState<any>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isApproved, setIsApproved] = useState(false);
   const [customText, setCustomText] = useState("");
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Call timer interval
   useEffect(() => {
-    let timer: any;
-    if (isCallActive) {
-      timer = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
     return () => clearInterval(timer);
-  }, [isCallActive]);
+  }, []);
+
+  // Auto-scroll conversation history to bottom
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversationHistory, callState]);
 
   const formatCallTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -101,8 +120,11 @@ export default function VoiceRecovery() {
   };
 
   // Speak AI Audio response in the selected Indian language
-  const speakAIResponse = (text: string, langCode: string) => {
-    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  const speakAIResponse = (text: string, langCode: string, onFinish?: () => void) => {
+    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      if (onFinish) onFinish();
+      return;
+    }
     
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -110,284 +132,270 @@ export default function VoiceRecovery() {
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
 
+    utterance.onend = () => {
+      setCallState('IDLE');
+      if (onFinish) onFinish();
+    };
+
+    utterance.onerror = () => {
+      setCallState('IDLE');
+      if (onFinish) onFinish();
+    };
+
+    setCallState('AI_SPEAKING');
     window.speechSynthesis.speak(utterance);
   };
 
-  // Real-time microphone speech recognition
-  const startLiveRecording = () => {
+  // Step 1: Start User Speaking (Calm, no rush)
+  const startListening = () => {
     setRecognitionError(null);
-    setParsedIntent(null);
-    setIsApproved(false);
-    setShowWhatsAppPopup(false);
-    setTranscript("");
-    setAiSpokenResponse("");
+    setCurrentSpokenText("");
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setRecognitionError("Speech recognition is not supported in this browser. Please open in Google Chrome.");
+      setRecognitionError("Speech recognition not supported in this browser. Please open in Google Chrome.");
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = selectedLang.code;
-      recognition.continuous = false;
+      recognition.continuous = true; // Stay active so user can speak multiple sentences calmly
       recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        setIsListening(true);
+        setCallState('LISTENING');
       };
 
       recognition.onresult = (event: any) => {
-        let currentTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript + " ";
         }
-        setTranscript(currentTranscript);
-        setCustomText(currentTranscript);
+        setCurrentSpokenText(fullTranscript.trim());
       };
 
       recognition.onerror = (event: any) => {
-        console.error("Speech Recognition Error:", event.error);
         if (event.error === 'not-allowed') {
-          setRecognitionError("Microphone permission denied. Please allow microphone in your browser address bar.");
-        } else if (event.error === 'no-speech') {
-          setRecognitionError("No speech detected. Please speak into the mic.");
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        if (transcript && transcript.trim().length > 0) {
-          processIntent(transcript);
+          setRecognitionError("Microphone permission denied. Please allow microphone in your browser bar.");
         }
       };
 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err: any) {
-      console.error("Speech start error:", err);
       setRecognitionError("Failed to initialize microphone.");
-      setIsListening(false);
+      setCallState('IDLE');
     }
   };
 
-  const stopLiveRecording = () => {
+  // Step 2: User explicitly finishes speaking or clicks "Done Speaking"
+  const finishSpeakingAndAnalyze = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  // Quick Demo Phrase Simulation
-  const handleSimulateDemo = (sampleText: string, lang: LanguageOption) => {
-    setSelectedLang(lang);
-    setParsedIntent(null);
-    setIsApproved(false);
-    setShowWhatsAppPopup(false);
-    setTranscript("");
-    setAiSpokenResponse("");
-    setIsListening(true);
-
-    let i = 0;
-    const interval = setInterval(() => {
-      setTranscript(sampleText.substring(0, i));
-      i++;
-      if (i > sampleText.length) {
-        clearInterval(interval);
-        setIsListening(false);
-        processIntent(sampleText);
-      }
-    }, 25);
-  };
-
-  // Custom text submission
-  const handleCustomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customText.trim()) return;
-    setParsedIntent(null);
-    setIsApproved(false);
-    setShowWhatsAppPopup(false);
-    setTranscript(customText);
-    processIntent(customText);
-  };
-
-  // Robust Intent Analyzer (Handles native scripts + Latin dialects)
-  const analyzeLocally = (text: string): any => {
-    const t = text.toLowerCase();
-    
-    // Refusal & Cancellation check
-    const isRefusal = [
-      "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ", "ಇಲ್ಲ", "ಆಗಲ್ಲ", "ಆಗೋದಿಲ್ಲ", "ಮಾಡಲ್ಲ", "beda", "cancel", "illa", "aagalla", "kodalla",
-      "नहीं", "मत करो", "रद्द", "कैंसिल", "nahi", "mat karo", "manaa",
-      "வேண்டாம்", "ரத்து", "முடியாது", "வద్దు", "రద్దు", "లేదు",
-      "cancel", "don't want", "dont want", "no", "stop", "never", "refuse", "not interested"
-    ].some(k => t.includes(k));
-
-    if (isRefusal) {
-      return {
-        intent: "OPT_OUT",
-        detected_language: selectedLang.name,
-        willingness_to_pay: false,
-        sentiment: "Refusal / Cancellation",
-        confidence_score: 98,
-        payment_method: null,
-        requested_date: null,
-        ai_spoken_reply: selectedLang.ttsCancelResponse,
-        recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
-      };
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
     }
 
-    // Alternative UPI method check
-    const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "paytm", "qr", "link", "गूगल पे", "यूपीಐ"].some(k => t.includes(k));
-
-    // Promise to pay check
-    const isPromise = [
-      "ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "ಮಾಡುತ್ತೇನೆ", "ಕೊಡ್ತೀನಿ", "ಸಂಜೆ", "ಬೆಳಗ್ಗೆ", "naale", "madthini", "kodthini",
-      "कल", "कर दूंगा", "दूँगा", "kal", "kar dunga", "dunga",
-      "நாளை", "ரேపు", "tomorrow", "later", "next week", "pay soon"
-    ].some(k => t.includes(k));
-
-    if (isPromise) {
-      return {
-        intent: "PROMISE_TO_PAY",
-        detected_language: selectedLang.name,
-        willingness_to_pay: true,
-        sentiment: "Positive (Promise to Pay)",
-        confidence_score: 97,
-        payment_method: isUPI ? "UPI" : "UPI (Google Pay / PhonePe)",
-        requested_date: "Tomorrow morning",
-        ai_spoken_reply: selectedLang.ttsPromiseResponse,
-        recommended_action: `Schedule 1-Tap UPI WhatsApp Payment Link for tomorrow morning in ${selectedLang.name}`
-      };
+    const textToProcess = currentSpokenText.trim();
+    if (!textToProcess) {
+      setCallState('IDLE');
+      return;
     }
 
-    if (isUPI) {
-      return {
-        intent: "ALTERNATIVE_METHOD",
-        detected_language: selectedLang.name,
-        willingness_to_pay: true,
-        sentiment: "Positive (Prefers UPI)",
-        confidence_score: 96,
-        payment_method: "UPI (Google Pay / PhonePe)",
-        requested_date: "Immediate",
-        ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ." : selectedLang.code === 'hi-IN' ? "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।" : "Sure! We are sending an instant 1-tap UPI payment link to your WhatsApp right now.",
-        recommended_action: "Generate instant 1-Tap UPI deep link via Razorpay"
-      };
-    }
-
-    return {
-      intent: "GENERAL_QUERY",
-      detected_language: selectedLang.name,
-      willingness_to_pay: true,
-      sentiment: "Engaged Customer",
-      confidence_score: 94,
-      payment_method: "UPI",
-      requested_date: "Immediate",
-      ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." : selectedLang.code === 'hi-IN' ? "धन्यवाद. हमने आपका अनुरोध नोट कर लिया है और आपकी सहायता कर रहे हैं।" : "Thank you. We have noted your request and are updating your payment status.",
-      recommended_action: "Logged customer inquiry and assigned priority recovery strategy"
+    // Append Customer message to history
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: textToProcess,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
     };
+
+    const updatedHistory = [...conversationHistory, customerMsg];
+    setConversationHistory(updatedHistory);
+    setCurrentSpokenText("");
+    
+    // Now trigger AI analysis sequentially
+    processTurn(textToProcess, updatedHistory);
   };
 
-  // AI Intent Extraction Pipeline & Audio Spoken Feedback
-  const processIntent = async (text: string) => {
-    if (!text || !text.trim()) return;
-    setIsProcessing(true);
+  // Step 3: Handle text submit
+  const handleCustomTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customText.trim() || callState !== 'IDLE') return;
+
+    const textToProcess = customText.trim();
+    setCustomText("");
+
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: textToProcess,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
+    };
+
+    const updatedHistory = [...conversationHistory, customerMsg];
+    setConversationHistory(updatedHistory);
+
+    processTurn(textToProcess, updatedHistory);
+  };
+
+  // Step 4: Multi-Turn Intent & Sequential Response Generation
+  const processTurn = async (text: string, currentHistory: MessageTurn[]) => {
+    setCallState('ANALYZING');
     
     try {
       let intentData: any = null;
 
-      // Try hitting the live backend first
       try {
         const response = await fetch("http://127.0.0.1:8000/api/v1/voice/intent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ utterance: text, session_id: "call-session-904" })
+          body: JSON.stringify({ 
+            utterance: text, 
+            session_id: "session_9042",
+            history: currentHistory.map(h => ({ role: h.role, text: h.text }))
+          })
         });
+
         if (response.ok) {
           const data = await response.json();
           intentData = data.extracted_data;
         }
       } catch (e) {
-        console.warn("Backend offline, using intelligent multi-dialect engine.");
+        console.warn("Backend offline, using client multi-turn fallback.");
       }
 
-      // If backend was offline or returned unknown, use our smart local analyzer
+      // Local fallback if backend is offline
       if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
-        intentData = analyzeLocally(text);
+        const t = text.toLowerCase();
+        const isRefusal = ["ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಮಾಡಲ್ಲ", "ಆಗಲ್ಲ", "beda", "cancel", "nahi", "no", "stop"].some(k => t.includes(k));
+        const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "link"].some(k => t.includes(k));
+        const isPromise = ["ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "kal", "tomorrow", "later"].some(k => t.includes(k));
+        const isRefund = ["ರೀಫಂಡ್", "refund", "cut", "ಕಟ್"].some(k => t.includes(k));
+
+        if (isRefusal) {
+          intentData = {
+            intent: "OPT_OUT",
+            sentiment: "Refusal / Cancellation",
+            confidence_score: 98,
+            willingness_to_pay: false,
+            ai_spoken_reply: selectedLang.ttsCancelResponse,
+            recommended_action: "Halt automated outreach immediately. Order cancelled per customer request."
+          };
+        } else if (isRefund) {
+          intentData = {
+            intent: "REFUND_REQUEST",
+            sentiment: "Frustrated / Refund",
+            confidence_score: 97,
+            willingness_to_pay: false,
+            ai_spoken_reply: "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.",
+            recommended_action: "Execute T+0 Instant Refund via Razorpay API"
+          };
+        } else if (isUPI) {
+          intentData = {
+            intent: "ALTERNATIVE_METHOD",
+            sentiment: "Positive (Prefers UPI)",
+            confidence_score: 96,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ." : "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।",
+            recommended_action: "Generate instant 1-Tap UPI deep link"
+          };
+        } else if (isPromise) {
+          intentData = {
+            intent: "PROMISE_TO_PAY",
+            sentiment: "Positive (Promise to Pay)",
+            confidence_score: 97,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.ttsPromiseResponse,
+            recommended_action: "Schedule 1-Tap UPI WhatsApp Payment Link for tomorrow"
+          };
+        } else {
+          intentData = {
+            intent: "GENERAL_QUERY",
+            sentiment: "Engaged Customer",
+            confidence_score: 95,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." : "Thank you for the update. We are assisting you right away.",
+            recommended_action: "Logged conversation and assigned priority recovery strategy"
+          };
+        }
       }
-      
+
+      const aiReplyText = intentData.ai_spoken_reply || selectedLang.ttsPromiseResponse;
+
+      // Update structured state
       const isCancellation = intentData.intent === "OPT_OUT" || !intentData.willingness_to_pay;
-      const spokenAudioText = intentData.ai_spoken_reply || (isCancellation 
-        ? selectedLang.ttsCancelResponse 
-        : selectedLang.ttsPromiseResponse);
-      
-      setAiSpokenResponse(spokenAudioText);
-      speakAIResponse(spokenAudioText, selectedLang.code);
+      setParsedIntent({
+        intent: intentData.intent || "PROMISE_TO_PAY",
+        language: selectedLang.name,
+        sentiment: intentData.sentiment || "Positive",
+        confidence: intentData.confidence_score || 96,
+        willingness: isCancellation ? "Negative (Cancelled)" : "Positive (Engaged)",
+        method: intentData.payment_method || (isCancellation ? "None" : "UPI (Google Pay / PhonePe)"),
+        date: intentData.requested_date || (intentData.intent === "PROMISE_TO_PAY" ? "Tomorrow morning" : "Immediate"),
+        action: intentData.recommended_action || "Autonomous Strategy Updated"
+      });
 
-      if (isCancellation) {
-        setShowWhatsAppPopup(false);
-        setParsedIntent({
-          intent: "OPT_OUT",
-          language: intentData.detected_language || selectedLang.name,
-          sentiment: intentData.sentiment || "Refusal / Cancellation",
-          confidence: intentData.confidence_score || 98,
-          willingness: "Negative (Customer Refused / Cancelled)",
-          method: "None (Order Cancelled)",
-          date: "N/A",
-          action: intentData.recommended_action || "Halt automated outreach immediately. Order cancelled per customer request."
-        });
+      if (!isCancellation && intentData.intent !== 'REFUND_REQUEST') {
+        setShowWhatsAppPopup(true);
       } else {
-        setParsedIntent({
-          intent: intentData.intent || "PROMISE_TO_PAY",
-          language: intentData.detected_language || selectedLang.name,
-          sentiment: intentData.sentiment || "Positive (Promise to Pay)",
-          confidence: intentData.confidence_score || 96,
-          willingness: "Positive (Promise to Pay)",
-          method: intentData.payment_method || "UPI (Google Pay / PhonePe)",
-          date: intentData.requested_date || "Tomorrow morning",
-          action: intentData.recommended_action || (intentData.intent === "PROMISE_TO_PAY" 
-                  ? `Schedule 1-Tap UPI WhatsApp Payment Link for ${intentData.requested_date || 'tomorrow'}`
-                  : `Generate instant 1-Tap ${intentData.payment_method || 'UPI'} deep link`)
-        });
-
-        // Show interactive WhatsApp preview popup only if customer agreed to pay
-        setTimeout(() => {
-          setShowWhatsAppPopup(true);
-        }, 1200);
+        setShowWhatsAppPopup(false);
       }
+
+      // Add AI Agent Response to conversation history
+      const agentMsg: MessageTurn = {
+        id: `agent-${Date.now()}`,
+        role: 'agent',
+        text: aiReplyText,
+        timestamp: formatCallTime(callDuration),
+        lang: selectedLang.nativeName,
+        intent: intentData.intent
+      };
+
+      setConversationHistory(prev => [...prev, agentMsg]);
+
+      // Speak AI response aloud (Only after user finished speaking!)
+      speakAIResponse(aiReplyText, selectedLang.code, () => {
+        setCallState('IDLE');
+      });
 
     } catch (err) {
-      console.error("Voice processing error:", err);
-    } finally {
-      setIsProcessing(false);
+      console.error("Turn processing error:", err);
+      setCallState('IDLE');
     }
+  };
+
+  const clearCallHistory = () => {
+    setConversationHistory([]);
+    setParsedIntent(null);
+    setShowWhatsAppPopup(false);
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-gray-100 p-6 md:p-10 font-sans">
       
-      {/* Header with Call Status & Dialect Selection */}
-      <header className="mb-8 max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-5 gap-4">
+      {/* Header */}
+      <header className="mb-6 max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-4 gap-4">
         <div>
           <div className="flex items-center space-x-3 mb-1">
             <h1 className="text-2xl font-bold text-white flex items-center">
               <Phone className="mr-2.5 text-blue-500" size={24} />
-              AI Voice Recovery Agent
+              Sequential Multi-Turn Voice AI Agent
             </h1>
             <span className="flex items-center text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1.5"></span>
-              Call Active ({formatCallTime(callDuration)})
+              Live Call: {formatCallTime(callDuration)}
             </span>
           </div>
           <p className="text-gray-400 text-xs">
-            Two-way conversational AI: Speak in your mother tongue, and the AI agent understands your intent and <strong>speaks back aloud in your language</strong>.
+            Calm, turn-by-turn phone conversation: Speak at your own pace. The AI listens completely, saves history, and answers sequentially.
           </p>
         </div>
 
-        {/* Language Selector & TTS Audio Toggle */}
+        {/* Dialect Selector & Audio Toggle */}
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setTtsEnabled(!ttsEnabled)}
@@ -396,10 +404,9 @@ export default function VoiceRecovery() {
                 ? 'bg-blue-600/20 border-blue-500 text-blue-400' 
                 : 'bg-slate-900 border-gray-800 text-gray-500'
             }`}
-            title="Toggle AI Voice Audio Output"
           >
-            {ttsEnabled ? <Volume2 size={16} className="mr-1.5" /> : <VolumeX size={16} className="mr-1.5" />}
-            AI Audio: {ttsEnabled ? 'ON' : 'MUTED'}
+            {ttsEnabled ? <Volume2 size={15} className="mr-1.5" /> : <VolumeX size={15} className="mr-1.5" />}
+            Audio: {ttsEnabled ? 'ON' : 'MUTED'}
           </button>
 
           <div className="flex items-center bg-slate-900 border border-gray-800 p-1 rounded-xl">
@@ -408,7 +415,7 @@ export default function VoiceRecovery() {
                 key={lang.code}
                 onClick={() => {
                   setSelectedLang(lang);
-                  if (isListening) stopLiveRecording();
+                  if (callState === 'LISTENING') finishSpeakingAndAnalyze();
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
                   selectedLang.code === lang.code
@@ -423,324 +430,258 @@ export default function VoiceRecovery() {
         </div>
       </header>
 
-      {/* Main Grid: Phone Screen & AI Decision Engine */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+      {/* Main 2-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto">
         
-        {/* Left Column: Interactive Phone Call UI */}
-        <div className="bg-slate-900 rounded-2xl border border-gray-800 overflow-hidden flex flex-col justify-between shadow-2xl relative">
+        {/* Left 7 Columns: Live Call Thread & Interaction Center */}
+        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-gray-800 flex flex-col shadow-2xl overflow-hidden min-h-[560px]">
           
-          {/* Phone Header */}
-          <div className="p-4 bg-slate-950/80 border-b border-gray-800 flex justify-between items-center text-xs">
+          {/* Active Call Header */}
+          <div className="p-3.5 bg-slate-950/80 border-b border-gray-800 flex justify-between items-center text-xs">
             <div className="flex items-center space-x-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span className="font-semibold text-white">Customer Call: Rajesh Kumar (+91 98450 XXXXX)</span>
+              <span className="font-semibold text-white">Rajesh Kumar (+91 98450 XXXXX)</span>
+              <span className="text-gray-500 font-mono text-[10px]">({selectedLang.name})</span>
             </div>
-            <span className="text-gray-400 font-mono">Channel: WebRTC Audio</span>
+            <button 
+              onClick={clearCallHistory}
+              className="text-[11px] text-gray-500 hover:text-red-400 flex items-center transition"
+            >
+              <Trash2 size={12} className="mr-1" /> Reset Call
+            </button>
           </div>
 
-          {/* Interactive Calling Center */}
-          <div className="p-8 flex flex-col items-center justify-center">
+          {/* Chronological Multi-Turn Conversation Thread */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-black/40 text-xs font-sans max-h-[340px]">
+            {conversationHistory.map((msg) => {
+              const isCustomer = msg.role === 'customer';
+              return (
+                <div 
+                  key={msg.id}
+                  className={`flex items-start space-x-2.5 ${isCustomer ? 'justify-end' : 'justify-start'}`}
+                >
+                  {!isCustomer && (
+                    <div className="w-7 h-7 rounded-full bg-blue-950 border border-blue-800 text-blue-400 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                      <Bot size={14} />
+                    </div>
+                  )}
+
+                  <div className={`max-w-[82%] rounded-2xl p-3 shadow-md ${
+                    isCustomer 
+                      ? 'bg-blue-600 text-white rounded-br-none' 
+                      : 'bg-slate-900 border border-gray-800 text-gray-200 rounded-bl-none'
+                  }`}>
+                    <div className="flex items-center justify-between text-[10px] opacity-75 mb-1 gap-2">
+                      <span className="font-bold">{isCustomer ? `Customer (${msg.lang})` : 'AI Voice Agent'}</span>
+                      <span className="font-mono">{msg.timestamp}</span>
+                    </div>
+                    <p className="leading-relaxed text-[13px]">{msg.text}</p>
+                  </div>
+
+                  {isCustomer && (
+                    <div className="w-7 h-7 rounded-full bg-slate-800 border border-gray-700 text-gray-300 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                      <User size={14} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Live Streaming Speech Buffer While Customer is Speaking */}
+            {callState === 'LISTENING' && currentSpokenText && (
+              <div className="flex justify-end items-start space-x-2 animate-fade-in">
+                <div className="max-w-[82%] rounded-2xl p-3 bg-blue-950/60 border border-blue-500/50 text-blue-200 rounded-br-none">
+                  <div className="flex items-center space-x-1.5 text-[10px] text-blue-400 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                    <span className="font-bold">Speaking in real-time...</span>
+                  </div>
+                  <p className="italic text-[13px]">{currentSpokenText}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Thinking / Analyzing Indicator */}
+            {callState === 'ANALYZING' && (
+              <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
+                <Activity size={16} className="animate-spin" />
+                <span>AI Agent understanding your dialogue & preparing reply...</span>
+              </div>
+            )}
+
+            {/* AI Speaking Wave Indicator */}
+            {callState === 'AI_SPEAKING' && (
+              <div className="flex items-center space-x-2 text-emerald-400 p-2 text-xs">
+                <Volume2 size={16} className="animate-bounce" />
+                <span>AI Agent speaking reply aloud in {selectedLang.nativeName}...</span>
+              </div>
+            )}
+
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Interactive Turn-Taking Controller (No Hurry, Explicit Control) */}
+          <div className="p-4 bg-slate-950 border-t border-gray-800">
             
-            {/* Animated Waveform / Mic Circle */}
-            <div className="relative mb-6">
-              {isListening && (
-                <>
-                  <div className="absolute -inset-6 bg-red-500/20 rounded-full animate-ping"></div>
-                  <div className="absolute -inset-3 bg-red-500/30 rounded-full animate-pulse"></div>
-                </>
-              )}
-              {isProcessing && (
-                <div className="absolute -inset-4 bg-blue-500/20 rounded-full animate-spin"></div>
-              )}
-              
-              <button
-                onClick={isListening ? stopLiveRecording : startLiveRecording}
-                className={`relative w-28 h-28 rounded-full flex flex-col items-center justify-center transition shadow-2xl ${
-                  isListening
-                    ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
-                    : 'bg-gradient-to-tr from-blue-600 to-indigo-500 hover:scale-105 text-white'
-                }`}
-              >
-                {isListening ? <MicOff size={40} /> : <Mic size={40} />}
-                <span className="text-[10px] font-bold mt-1 tracking-wider uppercase">
-                  {isListening ? 'Stop' : 'Tap to Speak'}
-                </span>
-              </button>
-            </div>
-
-            <p className="text-sm font-medium mb-1 text-center">
-              {isListening ? (
-                <span className="text-red-400 font-bold flex items-center justify-center">
-                  <span className="w-2 h-2 rounded-full bg-red-400 animate-ping mr-2"></span>
-                  Listening in {selectedLang.nativeName} ({selectedLang.name})... Speak your mind!
-                </span>
-              ) : (
-                <span className="text-gray-300">
-                  Tap mic and speak in <strong>{selectedLang.nativeName} ({selectedLang.name})</strong>
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-gray-500 text-center mb-6">
-              Speak naturally (e.g. &ldquo;{selectedLang.samplePhrase}&rdquo;)
-            </p>
-
             {recognitionError && (
-              <div className="bg-red-950/80 border border-red-800 text-red-300 text-xs px-4 py-2 rounded-xl mb-4 max-w-md text-center">
+              <div className="bg-red-950/80 border border-red-800 text-red-300 text-xs px-3 py-1.5 rounded-lg mb-3 text-center">
                 {recognitionError}
               </div>
             )}
 
-            {/* Quick 1-Click Simulation Pills */}
-            <div className="w-full pt-4 border-t border-gray-800 text-center">
-              <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-2">Or click sample dialect to test:</p>
-              <div className="flex flex-wrap justify-center gap-2 mb-4">
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => handleSimulateDemo(lang.samplePhrase, lang)}
-                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-900/30 rounded-lg text-xs font-medium transition flex items-center"
-                  >
-                    <Play size={10} className="mr-1.5 text-blue-400" />
-                    {lang.name}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center justify-between gap-3">
+              
+              {/* Primary Mic Button / Done Speaking Toggle */}
+              {callState === 'LISTENING' ? (
+                <button
+                  onClick={finishSpeakingAndAnalyze}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs flex items-center justify-center transition shadow-lg animate-pulse"
+                >
+                  <CheckCircle2 size={16} className="mr-2" />
+                  ✓ DONE SPEAKING (Send Turn)
+                </button>
+              ) : (
+                <button
+                  onClick={startListening}
+                  disabled={callState === 'ANALYZING' || callState === 'AI_SPEAKING'}
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs flex items-center justify-center transition shadow-lg disabled:opacity-50"
+                >
+                  <Mic size={16} className="mr-2" />
+                  TAP TO TALK ({selectedLang.nativeName})
+                </button>
+              )}
+
+              {/* One-Click Sample Prompt to Test */}
+              <button
+                onClick={() => {
+                  setCurrentSpokenText(selectedLang.samplePhrase);
+                  processTurn(selectedLang.samplePhrase, conversationHistory);
+                }}
+                disabled={callState !== 'IDLE'}
+                className="px-3 py-3 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-gray-800 rounded-xl text-xs font-semibold shrink-0 transition disabled:opacity-50"
+                title="Simulate sample dialect"
+              >
+                <Play size={14} className="inline mr-1" /> Test Sample
+              </button>
             </div>
 
-            {/* Custom Input Bar */}
-            <form onSubmit={handleCustomSubmit} className="w-full bg-black/60 p-2.5 rounded-xl border border-gray-800 flex space-x-2">
+            {/* Custom Text Typing Bar */}
+            <form onSubmit={handleCustomTextSubmit} className="mt-3 flex space-x-2">
               <input 
                 type="text" 
-                placeholder={`Type in ${selectedLang.name} (e.g. ನನಗೆ ಬೇಡ or ನಾಳೆ ಮಾಡ್ತೀನಿ)...`}
+                placeholder={`Or type next reply in ${selectedLang.name}...`}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
-                className="flex-1 bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none"
+                disabled={callState !== 'IDLE'}
+                className="flex-1 bg-black border border-gray-800 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
               <button 
                 type="submit"
-                disabled={isProcessing}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition flex items-center disabled:opacity-50"
+                disabled={!customText.trim() || callState !== 'IDLE'}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center disabled:opacity-50 transition"
               >
-                <Send size={12} className="mr-1" /> Send
+                <Send size={13} className="mr-1" /> Send
               </button>
             </form>
-
-          </div>
-
-          {/* Transcript & Spoken Dialogue Box */}
-          <div className="p-4 bg-black border-t border-gray-800 text-xs font-mono">
-            
-            {/* Customer Utterance */}
-            <div className="mb-3">
-              <span className="text-[10px] text-blue-400 uppercase tracking-wider font-bold block mb-1">
-                🗣️ Customer Spoke ({selectedLang.name}):
-              </span>
-              <p className="text-gray-200 min-h-[22px] italic">
-                {transcript ? `"${transcript}"` : <span className="text-gray-600">Awaiting speech...</span>}
-              </p>
-            </div>
-
-            {/* AI Audio Response Spoken Back */}
-            {aiSpokenResponse && (
-              <div className="pt-2.5 border-t border-gray-850 flex items-start justify-between">
-                <div>
-                  <span className={`text-[10px] uppercase tracking-wider font-bold flex items-center mb-1 ${
-                    parsedIntent?.intent === 'OPT_OUT' ? 'text-amber-400' : 'text-emerald-400'
-                  }`}>
-                    <Volume2 size={12} className="mr-1" />
-                    🤖 AI Spoke Back Aloud ({selectedLang.nativeName}):
-                  </span>
-                  <p className={`font-sans text-xs ${
-                    parsedIntent?.intent === 'OPT_OUT' ? 'text-amber-300' : 'text-emerald-300'
-                  }`}>
-                    &ldquo;{aiSpokenResponse}&rdquo;
-                  </p>
-                </div>
-                <button
-                  onClick={() => speakAIResponse(aiSpokenResponse, selectedLang.code)}
-                  className="px-2 py-1 bg-slate-800 text-gray-300 border border-gray-700 rounded text-[10px] font-sans hover:bg-slate-700 transition shrink-0 ml-2"
-                >
-                  Replay Audio
-                </button>
-              </div>
-            )}
-
           </div>
 
         </div>
 
-        {/* Right Column: AI Structured Intent & Decision Action */}
-        <div className="space-y-6">
+        {/* Right 5 Columns: Extracted Intelligence & Action State */}
+        <div className="lg:col-span-5 space-y-5">
           
-          {/* Structured Intent Card */}
-          <div className="bg-slate-900 rounded-2xl border border-gray-800 p-6 shadow-2xl relative min-h-[320px]">
+          {/* Structured Intelligence Card */}
+          <div className="bg-slate-900 rounded-2xl border border-gray-800 p-5 shadow-2xl relative min-h-[290px]">
             
-            {(!parsedIntent && !isProcessing) && (
-              <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-                <Mic size={36} className="text-gray-600 mb-3" />
-                <p className="text-gray-400 text-sm font-medium">Awaiting voice dialogue from customer</p>
-                <p className="text-gray-600 text-xs mt-1 max-w-xs">Speak into the phone on the left in any language. The AI extracts intent and answers back.</p>
-              </div>
-            )}
-
-            {isProcessing && (
-              <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-                <Activity size={36} className="text-blue-500 animate-spin mb-3" />
-                <p className="text-blue-400 font-semibold text-sm">Gemini 2.5 Flash Processing Dialect...</p>
-                <p className="text-gray-500 text-xs mt-1">Extracting intent, preferred payment rail, and sentiment.</p>
-              </div>
-            )}
-
             <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
-              <h2 className="font-bold text-white text-base flex items-center">
-                <Zap size={18} className="mr-2 text-yellow-400" />
-                Extracted Structured Intent
+              <h2 className="font-bold text-white text-sm flex items-center">
+                <Zap size={16} className="mr-2 text-yellow-400" />
+                Live Conversational State
               </h2>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-mono flex items-center">
-                  <Gauge size={11} className="mr-1" />
-                  {parsedIntent?.confidence || 98}% Confidence
-                </span>
-              </div>
+              <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-mono flex items-center">
+                <Gauge size={10} className="mr-1" />
+                {parsedIntent?.confidence || 97}% Confidence
+              </span>
             </div>
 
-            <dl className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Customer Intent</dt>
-                <dd className={`text-sm font-bold ${
+            <dl className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
+                <dt className="text-gray-400 mb-0.5 text-[11px]">Primary Intent</dt>
+                <dd className={`font-bold ${
                   parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-white'
                 }`}>
-                  {parsedIntent?.intent || "---"}
+                  {parsedIntent?.intent || "Awaiting Dialogue"}
                 </dd>
               </div>
 
-              <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Spoken Language</dt>
-                <dd className="text-sm font-bold text-blue-400">{parsedIntent?.language || selectedLang.name}</dd>
+              <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
+                <dt className="text-gray-400 mb-0.5 text-[11px]">Dialect Detected</dt>
+                <dd className="font-bold text-blue-400">{parsedIntent?.language || selectedLang.name}</dd>
               </div>
 
-              <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Sentiment / Emotion</dt>
-                <dd className={`text-sm font-bold ${
+              <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
+                <dt className="text-gray-400 mb-0.5 text-[11px]">Customer Sentiment</dt>
+                <dd className={`font-bold ${
                   parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-emerald-400'
                 }`}>
-                  {parsedIntent?.sentiment || "---"}
+                  {parsedIntent?.sentiment || "Neutral"}
                 </dd>
               </div>
 
-              <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Payment Method</dt>
-                <dd className="text-sm font-bold text-purple-400">{parsedIntent?.method || "---"}</dd>
+              <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
+                <dt className="text-gray-400 mb-0.5 text-[11px]">Preferred Rail</dt>
+                <dd className="font-bold text-purple-400">{parsedIntent?.method || "UPI Intent"}</dd>
               </div>
             </dl>
 
-            <div className={`mt-4 border p-3.5 rounded-xl text-xs ${
-              parsedIntent?.intent === 'OPT_OUT' 
-                ? 'bg-red-950/30 border-red-900/50' 
-                : 'bg-blue-950/40 border-blue-900/60'
-            }`}>
-              <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 flex items-center ${
-                parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-blue-400'
-              }`}>
-                <Sparkles size={12} className="mr-1" />
-                Autonomous Action Triggered
+            <div className="mt-3.5 bg-blue-950/40 border border-blue-900/60 p-3 rounded-xl text-xs">
+              <p className="text-[10px] text-blue-400 uppercase tracking-wider font-semibold mb-1 flex items-center">
+                <Sparkles size={11} className="mr-1" />
+                Autonomous Action Determined
               </p>
-              <p className="text-sm font-medium text-white flex items-center">
-                <ArrowRight size={14} className="mr-2 text-blue-400 shrink-0" />
-                {parsedIntent?.action || "---"}
+              <p className="text-xs font-medium text-white flex items-center">
+                <ArrowRight size={13} className="mr-1.5 text-blue-400 shrink-0" />
+                {parsedIntent?.action || "Listening to customer to determine optimal recovery path."}
               </p>
             </div>
 
           </div>
 
-          {/* Cancellation Confirmation Box (When Customer Says NO/CANCEL) */}
+          {/* Cancellation State */}
           {parsedIntent?.intent === 'OPT_OUT' && (
-            <div className="bg-slate-900 border border-red-900/60 rounded-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="p-2 rounded-lg bg-red-950 text-red-400 border border-red-800">
-                  <XCircle size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Order Cancelled & Outreach Halted</h3>
-                  <p className="text-xs text-gray-400">Customer requested cancellation. Autonomous policy guard blocked further payment links.</p>
-                </div>
+            <div className="bg-slate-900 border border-red-900/60 rounded-2xl p-4 shadow-xl text-xs space-y-2 animate-in slide-in-from-bottom-3 duration-300">
+              <div className="flex items-center space-x-2 text-red-400 font-bold">
+                <XCircle size={16} />
+                <span>Outreach Halted (Opt-Out Confirmed)</span>
               </div>
-              <div className="bg-black/60 rounded-xl p-3 border border-red-950 text-xs text-gray-300 space-y-1 mt-3">
-                <p>✓ Status: <strong className="text-red-400 font-mono">ORDER_CANCELLED</strong></p>
-                <p>✓ Automated WhatsApp links: <strong className="text-red-400 font-mono">SUPPRESSED</strong></p>
-                <p>✓ DNC (Do Not Contact) Flag: <strong className="text-emerald-400 font-mono">LOGGED IN POSTGRESQL</strong></p>
-              </div>
+              <p className="text-gray-400 text-[11px]">
+                Customer requested cancellation. The agent logged a Do Not Contact (DNC) flag and closed the recovery ticket.
+              </p>
             </div>
           )}
 
-          {/* WhatsApp Interactive Payment Link Dispatch Popup (Only When Customer Promises to Pay) */}
-          {showWhatsAppPopup && parsedIntent?.intent !== 'OPT_OUT' && (
-            <div className="bg-slate-900 border border-emerald-900/60 rounded-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="p-1.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    <MessageSquare size={16} />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">WhatsApp 1-Tap Recovery Link Dispatched</h3>
-                    <p className="text-[10px] text-gray-400">Sent to customer phone (+91 98450 XXXXX)</p>
-                  </div>
+          {/* WhatsApp Payment Link Popup */}
+          {showWhatsAppPopup && (
+            <div className="bg-slate-900 border border-emerald-900/60 rounded-2xl p-4 shadow-xl text-xs space-y-2 animate-in slide-in-from-bottom-3 duration-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+                  <MessageSquare size={16} />
+                  <span>WhatsApp 1-Tap Recovery Link</span>
                 </div>
-                <span className="text-[10px] text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded-full font-mono">
-                  Delivered ✓
-                </span>
+                <span className="text-[10px] text-emerald-400 font-mono">Delivered ✓</span>
               </div>
-
-              {/* Realistic WhatsApp Chat Bubble */}
-              <div className="bg-emerald-950/40 border border-emerald-900/80 rounded-xl p-3 text-xs text-gray-200 font-sans space-y-2">
-                <p>
-                  Hello Rajesh! 👋 We noticed your recent payment was interrupted.
-                </p>
-                <p className="text-[11px] text-gray-300">
-                  As requested during our call, here is your instant <strong>1-Tap UPI Payment Link</strong> to complete your order safely:
-                </p>
-                <div className="bg-black/70 rounded-lg p-2.5 border border-emerald-800/80 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-emerald-400 font-mono block font-bold">Razorpay FastPay Link</span>
-                    <span className="text-xs text-white font-mono">https://rzp.io/i/RR-9042</span>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-400 font-mono">₹4,650</span>
+              
+              <div className="bg-black/60 rounded-xl p-2.5 border border-emerald-950 text-[11px] space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Payment Link:</span>
+                  <span className="text-emerald-400 font-mono">https://rzp.io/i/RR-9042</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Target Phone:</span>
+                  <span className="text-white font-mono">+91 98450 XXXXX</span>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Action Trigger Button */}
-          <button
-            disabled={!parsedIntent || isApproved}
-            onClick={() => setIsApproved(true)}
-            className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center transition shadow-lg text-sm ${
-              isApproved
-                ? 'bg-emerald-600 text-white cursor-default'
-                : !parsedIntent
-                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                  : parsedIntent?.intent === 'OPT_OUT'
-                    ? 'bg-red-600 hover:bg-red-500 text-white hover:scale-[1.01]'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white hover:scale-[1.01]'
-            }`}
-          >
-            {isApproved ? (
-              <>
-                <ShieldCheck size={18} className="mr-2" />
-                AUTONOMOUS ACTION EXECUTED & PERSISTED
-              </>
-            ) : parsedIntent?.intent === 'OPT_OUT' ? (
-              <>
-                <XCircle size={18} className="mr-2" />
-                CONFIRM CANCELLATION & CLOSE TICKET
-              </>
-            ) : (
-              <>
-                <Zap size={18} className="mr-2" />
-                CONFIRM & DISPATCH VIA RAZORPAY
-              </>
-            )}
-          </button>
 
         </div>
 
