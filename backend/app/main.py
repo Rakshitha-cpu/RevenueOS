@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import risk, ai, authorization, simulator, voice, audit, webhooks, metrics
+from app.api import risk, ai, authorization, simulator, voice, audit, webhooks, metrics, refunds
 from app.core.exceptions import RevenueOSBaseException, revenueos_exception_handler
 from dotenv import load_dotenv
 
@@ -34,6 +34,7 @@ app.include_router(voice.router, prefix="/api/v1/voice", tags=["Voice Engine"])
 app.include_router(audit.router, prefix="/api/v1/audit", tags=["Audit Trail"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["External Integrations"])
 app.include_router(metrics.router, prefix="/api/v1/observability", tags=["Observability & Metrics"])
+app.include_router(refunds.router, prefix="/api/v1/refunds", tags=["Instant Refunds & Compensation"])
 
 @app.get("/")
 def read_root():

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import ChatWidget from '@/components/ChatWidget';
 
@@ -39,12 +39,15 @@ export default function RootLayout({
               <Users size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">Customer Profile</span>
             </Link>
             
-            <p className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mt-8 mb-3">AI Agents</p>
+            <p className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mt-8 mb-3">AI Agents & Modules</p>
             <Link href="/simulator" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Zap size={18} className="group-hover:text-yellow-400 transition-colors" /> <span className="font-medium">What-If Simulator</span>
             </Link>
             <Link href="/voice" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Mic size={18} className="group-hover:text-red-400 transition-colors" /> <span className="font-medium">Voice Engine</span>
+            </Link>
+            <Link href="/refunds" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
+              <RotateCcw size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Instant Refunds</span>
             </Link>
             <Link href="/command-center" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <Terminal size={18} className="group-hover:text-emerald-400 transition-colors" /> <span className="font-medium">Command Center</span>
