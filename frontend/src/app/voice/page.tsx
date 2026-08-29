@@ -90,7 +90,6 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
   }
 ];
 
-// 10 Rigorous Telecaller Inspection & Verification Scenarios
 const VERIFICATION_SCENARIOS: QuickScenario[] = [
   {
     id: 'verify_cancel',
@@ -324,7 +323,6 @@ export default function VoiceRecovery() {
   const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
 
-  // Customer Dossier & Inspection State
   const [customerDossier, setCustomerDossier] = useState<CustomerVerificationState>({
     customerName: "Rajesh Kumar",
     phone: "+91 98450 XXXXX",
@@ -345,7 +343,8 @@ export default function VoiceRecovery() {
       text: SUPPORTED_LANGUAGES[0].initialGreeting,
       timestamp: "00:02",
       lang: "English",
-      verificationBadge: "VERIFIED_DOSSIER"
+      verificationBadge: "VERIFIED_DOSSIER",
+      quickReplies: ["✓ Yes, Speaking", "No, Wrong Number", "Why are you calling?"]
     }
   ]);
   
@@ -379,7 +378,8 @@ export default function VoiceRecovery() {
         text: lang.initialGreeting,
         timestamp: formatCallTime(callDuration),
         lang: lang.name,
-        verificationBadge: "VERIFIED_DOSSIER"
+        verificationBadge: "VERIFIED_DOSSIER",
+        quickReplies: ["✓ Yes, Speaking", "No, Wrong Number", "Why are you calling?"]
       }
     ]);
   };
@@ -516,7 +516,6 @@ export default function VoiceRecovery() {
     processInspectTurn(textToSubmit, updatedHistory);
   };
 
-  // Click scenario: Rigorous Telecaller Inspection
   const handleScenarioClick = (scenario: QuickScenario) => {
     if (callState !== 'IDLE') return;
 
@@ -577,7 +576,6 @@ export default function VoiceRecovery() {
     });
   };
 
-  // Inspect customer turn dynamically like an authentic telecaller
   const processInspectTurn = async (text: string, currentHistory: MessageTurn[]) => {
     setCallState('ANALYZING');
     
@@ -603,11 +601,11 @@ export default function VoiceRecovery() {
         console.warn("Backend offline, using local verification engine.");
       }
 
-      // Exact Telecaller Inspection Fallback Engine
+      // Exact Progressive Fallback Engine
       if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
         const t = text.toLowerCase().trim();
 
-        // 1. Human Escalation Request
+        // 1. Human Escalation
         if (/\b(human|manager|senior|officer|talk to person|person|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी)\b/i.test(t)) {
           setCustomerDossier(prev => ({ ...prev, handoffToHuman: true }));
           intentData = {
@@ -622,8 +620,50 @@ export default function VoiceRecovery() {
             quick_replies: ['✓ Connected with Vikram', 'Cancel Transfer']
           };
         }
-        // 2. Cancellation Inspection (Never blind cancel! Probe the reason)
-        else if (/\b(cancel|dont want|don't want|stop|not interested|ಕ್ಯಾನ್ಸಲ್|ಬೇಡ)\b/i.test(t)) {
+        // 2. SMS Delivery Request
+        else if (/\b(sms|text message|send sms|ಮೆಸೇಜ್|ಎಸ್ಎಂಎಸ್|एसएमएस)\b/i.test(t)) {
+          intentData = {
+            intent: "SMS_DISPATCHED",
+            sentiment: "Positive (Channel Switch)",
+            confidence_score: 99,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಖಂಡಿತ! ಪಾವತಿ ಲಿಂಕ್ ಹೊಂದಿರುವ SMS ಅನ್ನು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ +91 98450 XXXXX ಗೆ ರವಾನಿಸಲಾಗಿದೆ. ನೀವು Google Pay ಅಥವಾ PhonePe ಮೂಲಕ ಪಾವತಿಸಲು ಬಯಸುತ್ತೀರಾ?"
+              : "Done! A secure SMS with your 1-Tap payment link has been dispatched to +91 98450 XXXXX. Would you prefer completing it via Google Pay or PhonePe?",
+            recommended_action: "Dispatched verified SMS payment deep link to customer mobile",
+            quick_replies: ['Google Pay', 'PhonePe', 'Paytm UPI', 'Check Delivery Status']
+          };
+        }
+        // 3. WhatsApp / Switch to UPI
+        else if (/\b(whatsapp|switch to upi|upi|gpay|google pay|phonepe|paytm|ವಾಟ್ಸಾಪ್|ಯುಪಿಐ|ಜಿಪೇ|ಫೋನ್‌ಪೇ|व्हाट्सएप|यूपीआई)\b/i.test(t)) {
+          intentData = {
+            intent: "UPI_SELECTION",
+            sentiment: "Positive (Prefers UPI)",
+            confidence_score: 98,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಅಧಿಕೃತ Razorpay 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಸಕ್ರಿಯವಾಗಿದೆ. ನೀವು Google Pay, PhonePe ಅಥವಾ Paytm ಮೂಲಕ ತಕ್ಷಣ ಪೂರ್ಣಗೊಳಿಸಬಹುದೇ?"
+              : "Your verified 1-Tap UPI link is now active in WhatsApp. Would you like to complete payment using Google Pay, PhonePe, or Paytm?",
+            recommended_action: "Awaiting customer app selection to complete 1-tap checkout",
+            quick_replies: ['✓ Paid via Google Pay', '✓ Paid via PhonePe', 'Need Split Payment', 'Talk to Manager']
+          };
+        }
+        // 4. Card Decline / Timeout
+        else if (/\b(card|verify card|bank|retry|timeout|ಕಾರ್ಡ್|ಬ್ಯಾಂಕ್|कार्ड)\b/i.test(t)) {
+          intentData = {
+            intent: "CARD_DIAGNOSTIC",
+            sentiment: "Technical Complaint",
+            confidence_score: 98,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಆಡಿಟ್ ವರದಿ: HDFC ಗೇಟ್‌ವೇ E_504 ದೋಷ ನೀಡಿದೆ. ನಿಮ್ಮ ಕಾರ್ಡ್‌ನಲ್ಲಿ ಯಾವುದೇ ದೋಷವಿಲ್ಲ. 10 ನಿಮಿಷದಲ್ಲಿ ಮರುಪ್ರಯತ್ನಿಸುತ್ತೀರಾ ಅಥವಾ ವಾಟ್ಸಾಪ್ ಯುಪಿಐ ಬಳಸುತ್ತೀರಾ?"
+              : "Audit Log: HDFC Gateway timed out (E_504). Your card is perfectly active with zero fraud flags. Would you like to retry in 10 minutes or use 1-Tap UPI?",
+            recommended_action: "Provided live bank downtime diagnostic",
+            quick_replies: ['Switch to UPI', 'Retry Card Now', 'Escalate to Human']
+          };
+        }
+        // 5. Cancellation Request
+        else if (/\b(cancel|dont want|don't want|stop|not interested|ಕ್ಯಾನ್ಸಲ್|ಬೇಡ|रद्द)\b/i.test(t)) {
           intentData = {
             intent: "CANCEL_INSPECTION",
             sentiment: "Inspecting Cancellation",
@@ -636,7 +676,7 @@ export default function VoiceRecovery() {
             quick_replies: ['Found Cheaper', 'Delivery Too Slow', 'Talk to Human Manager', 'Confirm Final Cancel']
           };
         }
-        // 3. Reason provided: Price / Cheaper
+        // 6. Price Objection
         else if (/\b(cheaper|expensive|price|discount|ದುಬಾರಿ|ಕಡಿಮೆ|महंगा|सस्ता)\b/i.test(t)) {
           intentData = {
             intent: "PRICE_RETENTION",
@@ -650,18 +690,32 @@ export default function VoiceRecovery() {
             quick_replies: ['✓ Accept ₹4,418 Offer', 'Still Want to Cancel', 'Talk to Manager']
           };
         }
-        // 4. Confirmation / Proceeding
-        else if (/\b(yes|pay|send|confirm|okay|done|accept|ಆಯ್ತು|ಸರಿ|ಹೌದು|हाँ)\b/i.test(t)) {
+        // 7. Initial Confirmation / Yes
+        else if (/\b(yes|speaking|correct|right|ಹೌದು|ಸರಿ|हाँ)\b/i.test(t)) {
           intentData = {
-            intent: "VERIFIED_CONFIRMATION",
+            intent: "IDENTITY_CONFIRMED",
             sentiment: "Positive / Verified",
             confidence_score: 99,
             willingness_to_pay: true,
             ai_spoken_reply: selectedLang.code === 'kn-IN'
-              ? "ಧನ್ಯವಾದಗಳು ರಾಜೇಶ್ ಅವರೇ! ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗಿದೆ. ಅಧಿಕೃತ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪಾವತಿ ಲಿಂಕ್ ಅನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್ (+91 98450 XXXXX) ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."
-              : "Thank you Rajesh! Order #RZP-8921 parameters verified. The official 1-Tap UPI payment link has been delivered to your WhatsApp (+91 98450 XXXXX).",
+              ? "ಧನ್ಯವಾದಗಳು ರಾಜೇಶ್ ಅವರೇ! ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (₹4,650) ಗಾಗಿ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪಾವತಿ ಲಿಂಕ್ ಅನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ. ನೀವು SMS ಮೂಲಕವೂ ಲಿಂಕ್ ಪಡೆಯಲು ಬಯಸುತ್ತೀರಾ?"
+              : "Thank you Rajesh! Order #RZP-8921 parameters verified. The official 1-Tap UPI payment link has been delivered to your WhatsApp (+91 98450 XXXXX). Would you also like an SMS copy?",
             recommended_action: "Delivered authenticated 1-Tap UPI deep link",
-            quick_replies: ['✓ Open WhatsApp Link', 'Send SMS Copy']
+            quick_replies: ['✓ Open WhatsApp Link', 'Send SMS Copy', 'Switch to UPI', 'Verify Card Details']
+          };
+        }
+        // 8. Payment Completed / Done
+        else if (/\b(done|paid|completed|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|हो गया)\b/i.test(t)) {
+          intentData = {
+            intent: "PAYMENT_CONFIRMED",
+            sentiment: "Positive / Completed",
+            confidence_score: 99,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ₹4,650 ಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ತಕ್ಷಣ ರವಾನೆಯಾಗಲಿದೆ. ರಶೀದಿ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿದೆ."
+              : "Thank you Rajesh! Your payment of ₹4,650 has been confirmed. Order #RZP-8921 is now approved for immediate dispatch.",
+            recommended_action: "Payment confirmed, invoice generated",
+            quick_replies: ['Download Invoice', 'Track Delivery']
           };
         }
         // General query
@@ -675,7 +729,7 @@ export default function VoiceRecovery() {
               ? "ಖಂಡಿತ, ನಿಮ್ಮ ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ. ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) ಸಂಬಂಧಿಸಿದಂತೆ ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
               : "I am inspecting that for you right now regarding Order #RZP-8921 (Apple AirPods Pro - ₹4,650). How would you prefer to proceed?",
             recommended_action: "Inspected account details and awaiting customer preference",
-            quick_replies: ['Verify Card Details', 'Switch to UPI', 'Transfer to Human']
+            quick_replies: ['Switch to UPI', 'Send SMS Copy', 'Transfer to Human']
           };
         }
       }
@@ -732,7 +786,8 @@ export default function VoiceRecovery() {
       text: selectedLang.initialGreeting,
       timestamp: formatCallTime(callDuration),
       lang: selectedLang.name,
-      verificationBadge: "VERIFIED_DOSSIER"
+      verificationBadge: "VERIFIED_DOSSIER",
+      quickReplies: ["✓ Yes, Speaking", "No, Wrong Number", "Why are you calling?"]
     }]);
     setShowWhatsAppPopup(false);
   };
@@ -760,7 +815,6 @@ export default function VoiceRecovery() {
 
         {/* Audio Toggle & Language Bar */}
         <div className="flex items-center space-x-2">
-
           <button
             onClick={() => setTtsEnabled(!ttsEnabled)}
             className={`p-2 rounded-xl border text-xs flex items-center transition ${
@@ -791,7 +845,7 @@ export default function VoiceRecovery() {
         </div>
       </header>
 
-      {/* Verified Customer Order Dossier Bar (Live Telecaller Screen) */}
+      {/* Verified Customer Order Dossier Bar */}
       <section className="max-w-6xl mx-auto mb-5 bg-slate-900/90 border border-blue-900/50 rounded-2xl p-3.5 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           
@@ -968,7 +1022,7 @@ export default function VoiceRecovery() {
             {callState === 'ANALYZING' && (
               <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
                 <Activity size={16} className="animate-spin" />
-                <span>Priya inspecting account parameters & formulating next response...</span>
+                <span>Priya inspecting dialogue & updating recovery state...</span>
               </div>
             )}
 
