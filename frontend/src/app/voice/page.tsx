@@ -12,6 +12,7 @@ interface LanguageOption {
   name: string;
   nativeName: string;
   samplePhrase: string;
+  initialGreeting: string;
   ttsPromiseResponse: string;
   ttsCancelResponse: string;
 }
@@ -27,10 +28,20 @@ interface MessageTurn {
 
 const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { 
+    code: 'en-IN', 
+    name: 'English', 
+    nativeName: 'English', 
+    samplePhrase: 'My card failed. Can you send a 1-tap UPI payment link on WhatsApp?',
+    initialGreeting: 'Hello! This is an automated call from Razorpay. How can we assist you with completing your transaction today?',
+    ttsPromiseResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.',
+    ttsCancelResponse: 'Understood. We have cancelled your order as requested and stopped all automated outreach.'
+  },
+  { 
     code: 'kn-IN', 
     name: 'Kannada', 
     nativeName: 'ಕನ್ನಡ', 
     samplePhrase: 'ನನ್ನ ಕಾರ್ಡ್ ವರ್ಕ್ ಆಗ್ತಿಲ್ಲ, ನಾಳೆ ಗೂಗಲ್ ಪೇ ಮಾಡ್ತೀನಿ',
+    initialGreeting: 'ನಮಸ್ಕಾರ! Razorpay ನಿಂದ ಕರೆ ಮಾಡುತ್ತಿದ್ದೇವೆ. ನಿಮ್ಮ ಪಾವತಿ ಪೂರ್ಣಗೊಳಿಸಲು ನಾವು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?',
     ttsPromiseResponse: 'ಧನ್ಯವಾದಗಳು! ನಾಳೆ ಬೆಳಗ್ಗೆ ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.',
     ttsCancelResponse: 'ಖಂಡಿತ, ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಈ ಆರ್ಡರ್ ಅನ್ನು ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲಾಗಿದೆ. ನಾವು ಇನ್ನು ಮುಂದೆ ಕರೆ ಮಾಡುವುದಿಲ್ಲ.'
   },
@@ -39,23 +50,17 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Hindi', 
     nativeName: 'हिंदी', 
     samplePhrase: 'मेरा कार्ड काम नहीं कर रहा, मैं कल सुबह यूपीआई से पेमेंट कर दूंगा',
+    initialGreeting: 'नमस्ते! Razorpay से कॉल कर रहे हैं। आपके पेमेंट को पूरा करने में हम आपकी किस प्रकार सहायता कर सकते हैं?',
     ttsPromiseResponse: 'धन्यवाद! हम कल सुबह आपके व्हाट्सएप पर 1-टैप यूपीआई पेमेंट लिंक भेज देंगे।',
     ttsCancelResponse: 'जी बिल्कुल, आपके अनुरोध के अनुसार हमने आपका ऑर्डर रद्द कर दिया है। हम आगे से संपर्क नहीं करेंगे।'
-  },
-  { 
-    code: 'en-IN', 
-    name: 'English', 
-    nativeName: 'English', 
-    samplePhrase: 'My card failed. Can you send a UPI payment link on WhatsApp?',
-    ttsPromiseResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.',
-    ttsCancelResponse: 'Understood. We have cancelled your order as requested and stopped all outreach.'
   },
   { 
     code: 'ta-IN', 
     name: 'Tamil', 
     nativeName: 'தமிழ்', 
     samplePhrase: 'கார்டு வேலை செய்யவில்லை, நாளைக்கு ஜிபே மூலமா பணம் கட்டுகிறேன்',
-    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிஐ கட்டண இணைப்பை அனுப்புகிறோம்.',
+    initialGreeting: 'வணக்கம்! Razorpay இலிருந்து அழைக்கிறோம். உங்கள் கட்டணத்தை முடிக்க நாங்கள் எவ்வாறு உதவலாம்?',
+    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிಐ கட்டண இணைப்பை அனுப்புகிறோம்.',
     ttsCancelResponse: 'சரி, உங்கள் கோரிக்கையின்படி ஆர்டர் ரத்து செய்யப்பட்டது.'
   },
   { 
@@ -63,6 +68,7 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Telugu', 
     nativeName: 'తెలుగు', 
     samplePhrase: 'కార్డు పని చేయడం లేదు, రేపు పొద్దున ఫోన్‌పే ద్వారా చెల్లిస్తాను',
+    initialGreeting: 'నమస్కారం! Razorpay నుండి కాల్ చేస్తున్నాము. మీ చెల్లింపు పూర్తి చేయడానికి మేము ఎలా సహాయపడగలము?',
     ttsPromiseResponse: 'ధన్యవాదాలు! రేపు ఉదయం మీకు వాట్సాప్‌లో యూపీఐ పేమెంట్ లింక్ పంపుతాము.',
     ttsCancelResponse: 'సరే, మీ అభ్యర్థన మేరకు ఆర్డర్ రద్దు చేయబడింది.'
   },
@@ -71,13 +77,14 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Malayalam', 
     nativeName: 'മലയാളം', 
     samplePhrase: 'കാർഡ് വർക്കാവുന്നില്ല, നാളെ രാവിലെ ഗൂഗിൾ പേ വഴി തരാം',
+    initialGreeting: 'നമസ്കാരം! Razorpay-ൽ നിന്നാണ് വിളിക്കുന്നത്. നിങ്ങളുടെ പേയ്‌മെന്റ് പൂർത്തിയാക്കാൻ ഞങ്ങൾക്ക് എങ്ങനെ സഹായിക്കാനാകും?',
     ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
     ttsCancelResponse: 'ശരി, നിങ്ങളുടെ അഭ്യർത്ഥന പ്രകാരം ഓർഡർ റദ്ദാക്കി.'
   }
 ];
 
 export default function VoiceRecovery() {
-  const [selectedLang, setSelectedLang] = useState<LanguageOption>(SUPPORTED_LANGUAGES[0]); // Default Kannada
+  const [selectedLang, setSelectedLang] = useState<LanguageOption>(SUPPORTED_LANGUAGES[0]); // Default English
   const [callState, setCallState] = useState<'IDLE' | 'LISTENING' | 'ANALYZING' | 'AI_SPEAKING'>('IDLE');
   const [callDuration, setCallDuration] = useState(18);
   const [currentSpokenText, setCurrentSpokenText] = useState("");
@@ -85,9 +92,9 @@ export default function VoiceRecovery() {
     {
       id: "msg-0",
       role: "agent",
-      text: "ನಮಸ್ಕಾರ! Razorpay ನಿಂದ ಕರೆ ಮಾಡುತ್ತಿದ್ದೇವೆ. ನಿಮ್ಮ ಪಾವತಿ ಪೂರ್ಣಗೊಳಿಸಲು ನಾವು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+      text: SUPPORTED_LANGUAGES[0].initialGreeting,
       timestamp: "00:02",
-      lang: "ಕನ್ನಡ"
+      lang: "English"
     }
   ]);
   
@@ -99,6 +106,26 @@ export default function VoiceRecovery() {
 
   const recognitionRef = useRef<any>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // When language changes, update greeting if at start of call
+  const handleLanguageChange = (lang: LanguageOption) => {
+    setSelectedLang(lang);
+    if (callState === 'LISTENING') finishSpeakingAndAnalyze();
+    
+    // Automatically switch opening greeting to match the selected language
+    setConversationHistory(prev => {
+      if (prev.length <= 1) {
+        return [{
+          id: `msg-${Date.now()}`,
+          role: 'agent',
+          text: lang.initialGreeting,
+          timestamp: formatCallTime(callDuration),
+          lang: lang.name
+        }];
+      }
+      return prev;
+    });
+  };
 
   // Call timer interval
   useEffect(() => {
@@ -160,7 +187,7 @@ export default function VoiceRecovery() {
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = selectedLang.code;
-      recognition.continuous = true; // Stay active so user can speak multiple sentences calmly
+      recognition.continuous = true;
       recognition.interimResults = true;
 
       recognition.onstart = () => {
@@ -216,7 +243,7 @@ export default function VoiceRecovery() {
     setConversationHistory(updatedHistory);
     setCurrentSpokenText("");
     
-    // Now trigger AI analysis sequentially
+    // Trigger AI analysis sequentially
     processTurn(textToProcess, updatedHistory);
   };
 
@@ -265,16 +292,16 @@ export default function VoiceRecovery() {
           intentData = data.extracted_data;
         }
       } catch (e) {
-        console.warn("Backend offline, using client multi-turn fallback.");
+        console.warn("Backend offline, using local engine.");
       }
 
-      // Local fallback if backend is offline
+      // Exact language fallback if backend returned offline/general
       if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
         const t = text.toLowerCase();
-        const isRefusal = ["ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಮಾಡಲ್ಲ", "ಆಗಲ್ಲ", "beda", "cancel", "nahi", "no", "stop"].some(k => t.includes(k));
-        const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "link"].some(k => t.includes(k));
-        const isPromise = ["ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "kal", "tomorrow", "later"].some(k => t.includes(k));
-        const isRefund = ["ರೀಫಂಡ್", "refund", "cut", "ಕಟ್"].some(k => t.includes(k));
+        const isRefusal = ["cancel", "don't want", "no", "stop", "never", "not interested", "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "nahi"].some(k => t.includes(k));
+        const isUPI = ["upi", "gpay", "phonepe", "link", "qr", "google pay", "paytm", "ಯುಪಿಐ", "ಜಿಪೇ"].some(k => t.includes(k));
+        const isPromise = ["tomorrow", "later", "morning", "evening", "next week", "will pay", "pay tomorrow", "ನಾಳೆ", "kal"].some(k => t.includes(k));
+        const isRefund = ["refund", "deducted", "cut", "money deducted", "ರೀಫಂಡ್", "रिफंड"].some(k => t.includes(k));
 
         if (isRefusal) {
           intentData = {
@@ -291,7 +318,11 @@ export default function VoiceRecovery() {
             sentiment: "Frustrated / Refund",
             confidence_score: 97,
             willingness_to_pay: false,
-            ai_spoken_reply: "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.",
+            ai_spoken_reply: selectedLang.code === 'en-IN' 
+              ? "Don't worry! We are issuing an instant T+0 reversal to your bank account right now. The UTR number has been sent to your WhatsApp." 
+              : selectedLang.code === 'kn-IN'
+                ? "ಚಿಂತೆ ಮಾಡಬೇಡಿ! ನಿಮ್ಮ ಹಣವನ್ನು ತಕ್ಷಣವೇ 2 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ. UTR ಸಂಖ್ಯೆಯನ್ನು ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ."
+                : "चिंता न करें! आपका रिफंड तुरंत आपके बैंक खाते में भेजा जा रहा है।",
             recommended_action: "Execute T+0 Instant Refund via Razorpay API"
           };
         } else if (isUPI) {
@@ -300,7 +331,11 @@ export default function VoiceRecovery() {
             sentiment: "Positive (Prefers UPI)",
             confidence_score: 96,
             willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ." : "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।",
+            ai_spoken_reply: selectedLang.code === 'en-IN'
+              ? "Sure! We are sending an instant 1-tap UPI payment link to your WhatsApp right now."
+              : selectedLang.code === 'kn-IN'
+                ? "ಖಂಡಿತ! ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಇವಾಗ್ಲೇ 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತಿದ್ದೇವೆ."
+                : "जी बिल्कुल! हम आपके व्हाट्सएप पर तुरंत 1-टैप यूपीआई लिंक भेज रहे हैं।",
             recommended_action: "Generate instant 1-Tap UPI deep link"
           };
         } else if (isPromise) {
@@ -318,7 +353,11 @@ export default function VoiceRecovery() {
             sentiment: "Engaged Customer",
             confidence_score: 95,
             willingness_to_pay: true,
-            ai_spoken_reply: selectedLang.code === 'kn-IN' ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ." : "Thank you for the update. We are assisting you right away.",
+            ai_spoken_reply: selectedLang.code === 'en-IN'
+              ? "Thank you for the update. We have noted your details and our team is assisting you right away."
+              : selectedLang.code === 'kn-IN'
+                ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ನಾವು ಪರಿಶೀಲಿಸಿ ಸಹಾಯ ಮಾಡುತ್ತೇವೆ."
+                : "धन्यवाद. हमने आपका अनुरोध नोट कर लिया है।",
             recommended_action: "Logged conversation and assigned priority recovery strategy"
           };
         }
@@ -351,13 +390,13 @@ export default function VoiceRecovery() {
         role: 'agent',
         text: aiReplyText,
         timestamp: formatCallTime(callDuration),
-        lang: selectedLang.nativeName,
+        lang: selectedLang.name,
         intent: intentData.intent
       };
 
       setConversationHistory(prev => [...prev, agentMsg]);
 
-      // Speak AI response aloud (Only after user finished speaking!)
+      // Speak AI response aloud in selected language
       speakAIResponse(aiReplyText, selectedLang.code, () => {
         setCallState('IDLE');
       });
@@ -369,7 +408,13 @@ export default function VoiceRecovery() {
   };
 
   const clearCallHistory = () => {
-    setConversationHistory([]);
+    setConversationHistory([{
+      id: `msg-${Date.now()}`,
+      role: 'agent',
+      text: selectedLang.initialGreeting,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
+    }]);
     setParsedIntent(null);
     setShowWhatsAppPopup(false);
   };
@@ -391,7 +436,7 @@ export default function VoiceRecovery() {
             </span>
           </div>
           <p className="text-gray-400 text-xs">
-            Calm, turn-by-turn phone conversation: Speak at your own pace. The AI listens completely, saves history, and answers sequentially.
+            Calm, turn-by-turn phone conversation: Select your language and speak naturally.
           </p>
         </div>
 
@@ -413,17 +458,14 @@ export default function VoiceRecovery() {
             {SUPPORTED_LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
-                onClick={() => {
-                  setSelectedLang(lang);
-                  if (callState === 'LISTENING') finishSpeakingAndAnalyze();
-                }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                onClick={() => handleLanguageChange(lang)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   selectedLang.code === lang.code
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                {lang.nativeName}
+                {lang.name}
               </button>
             ))}
           </div>
@@ -441,7 +483,7 @@ export default function VoiceRecovery() {
             <div className="flex items-center space-x-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
               <span className="font-semibold text-white">Rajesh Kumar (+91 98450 XXXXX)</span>
-              <span className="text-gray-500 font-mono text-[10px]">({selectedLang.name})</span>
+              <span className="text-blue-400 font-mono text-[11px] font-bold">({selectedLang.name})</span>
             </div>
             <button 
               onClick={clearCallHistory}
@@ -504,7 +546,7 @@ export default function VoiceRecovery() {
             {callState === 'ANALYZING' && (
               <div className="flex items-center space-x-2 text-blue-400 p-2 text-xs animate-pulse">
                 <Activity size={16} className="animate-spin" />
-                <span>AI Agent understanding your dialogue & preparing reply...</span>
+                <span>AI Agent analyzing in {selectedLang.name}...</span>
               </div>
             )}
 
@@ -512,14 +554,14 @@ export default function VoiceRecovery() {
             {callState === 'AI_SPEAKING' && (
               <div className="flex items-center space-x-2 text-emerald-400 p-2 text-xs">
                 <Volume2 size={16} className="animate-bounce" />
-                <span>AI Agent speaking reply aloud in {selectedLang.nativeName}...</span>
+                <span>AI Agent speaking reply in {selectedLang.name}...</span>
               </div>
             )}
 
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Interactive Turn-Taking Controller (No Hurry, Explicit Control) */}
+          {/* Interactive Turn-Taking Controller */}
           <div className="p-4 bg-slate-950 border-t border-gray-800">
             
             {recognitionError && (
@@ -546,7 +588,7 @@ export default function VoiceRecovery() {
                   className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs flex items-center justify-center transition shadow-lg disabled:opacity-50"
                 >
                   <Mic size={16} className="mr-2" />
-                  TAP TO TALK ({selectedLang.nativeName})
+                  TAP TO TALK ({selectedLang.name})
                 </button>
               )}
 
@@ -558,7 +600,7 @@ export default function VoiceRecovery() {
                 }}
                 disabled={callState !== 'IDLE'}
                 className="px-3 py-3 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-gray-800 rounded-xl text-xs font-semibold shrink-0 transition disabled:opacity-50"
-                title="Simulate sample dialect"
+                title="Simulate sample prompt"
               >
                 <Play size={14} className="inline mr-1" /> Test Sample
               </button>
@@ -568,7 +610,7 @@ export default function VoiceRecovery() {
             <form onSubmit={handleCustomTextSubmit} className="mt-3 flex space-x-2">
               <input 
                 type="text" 
-                placeholder={`Or type next reply in ${selectedLang.name}...`}
+                placeholder={`Type next reply in ${selectedLang.name}...`}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 disabled={callState !== 'IDLE'}
@@ -614,8 +656,8 @@ export default function VoiceRecovery() {
               </div>
 
               <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-0.5 text-[11px]">Dialect Detected</dt>
-                <dd className="font-bold text-blue-400">{parsedIntent?.language || selectedLang.name}</dd>
+                <dt className="text-gray-400 mb-0.5 text-[11px]">Dialect Active</dt>
+                <dd className="font-bold text-blue-400">{selectedLang.name}</dd>
               </div>
 
               <div className="bg-black/60 p-2.5 rounded-xl border border-gray-800">
@@ -640,7 +682,7 @@ export default function VoiceRecovery() {
               </p>
               <p className="text-xs font-medium text-white flex items-center">
                 <ArrowRight size={13} className="mr-1.5 text-blue-400 shrink-0" />
-                {parsedIntent?.action || "Listening to customer to determine optimal recovery path."}
+                {parsedIntent?.action || "Listening to customer in " + selectedLang.name + " to determine optimal recovery path."}
               </p>
             </div>
 
