@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "echo \"Warning: no test specified\" && exit 0"
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
