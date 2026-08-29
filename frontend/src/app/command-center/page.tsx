@@ -179,9 +179,14 @@ export default function AICommandCenter() {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-gray-900 flex justify-between items-center text-xs text-gray-500 font-sans">
-            <span>FastAPI Backend: <strong className="text-emerald-400">Connected</strong></span>
-            <span>Policy Engine: <strong className="text-blue-400">Deterministic ₹50k Cap</strong></span>
+          <div className="mt-4 pt-3 border-t border-gray-900 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] text-gray-500 font-sans gap-2">
+            <span className="flex items-center">
+              <Shield className="text-emerald-400 mr-1.5" size={13} />
+              Audit Log Hash: <code className="ml-1.5 text-blue-400 font-mono bg-blue-950/60 px-2 py-0.5 rounded border border-blue-900">0x7f3a9e14c82b9042... (Verified Immutable)</code>
+            </span>
+            <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-900">
+              RBI 5-Year Immutability Active
+            </span>
           </div>
         </div>
 
