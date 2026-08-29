@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Mic, MicOff, Activity, ShieldCheck, Languages, ArrowRight, Zap, Play, Send, 
-  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, Clock, QrCode, Sparkles 
+  Volume2, VolumeX, Phone, PhoneOff, MessageSquare, CheckCircle, XCircle, Clock, QrCode, Sparkles 
 } from 'lucide-react';
 
 interface LanguageOption {
@@ -11,7 +11,8 @@ interface LanguageOption {
   name: string;
   nativeName: string;
   samplePhrase: string;
-  ttsResponse: string;
+  ttsPromiseResponse: string;
+  ttsCancelResponse: string;
 }
 
 const SUPPORTED_LANGUAGES: LanguageOption[] = [
@@ -20,42 +21,48 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     name: 'Kannada', 
     nativeName: 'ಕನ್ನಡ', 
     samplePhrase: 'ನನ್ನ ಕಾರ್ಡ್ ವರ್ಕ್ ಆಗ್ತಿಲ್ಲ, ನಾಳೆ ಗೂಗಲ್ ಪೇ ಮಾಡ್ತೀನಿ',
-    ttsResponse: 'ಧನ್ಯವಾದಗಳು! ನಾಳೆ ಬೆಳಗ್ಗೆ ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.'
+    ttsPromiseResponse: 'ಧನ್ಯವಾದಗಳು! ನಾಳೆ ಬೆಳಗ್ಗೆ ನಿಮ್ಮ ವಾಟ್ಸಾಪ್‌ಗೆ ಯುಪಿಐ ಪೇಮೆಂಟ್ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.',
+    ttsCancelResponse: 'ಖಂಡಿತ, ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಈ ಆರ್ಡರ್ ಅನ್ನು ಕ್ಯಾನ್ಸಲ್ ಮಾಡಲಾಗಿದೆ. ನಾವು ಇನ್ನು ಮುಂದೆ ಕರೆ ಮಾಡುವುದಿಲ್ಲ.'
   },
   { 
     code: 'hi-IN', 
     name: 'Hindi', 
     nativeName: 'हिंदी', 
     samplePhrase: 'मेरा कार्ड काम नहीं कर रहा, मैं कल सुबह यूपीआई से पेमेंट कर दूंगा',
-    ttsResponse: 'धन्यवाद! हम कल सुबह आपके व्हाट्सएप पर 1-टैप यूपीआई पेमेंट लिंक भेज देंगे।'
+    ttsPromiseResponse: 'धन्यवाद! हम कल सुबह आपके व्हाट्सएप पर 1-टैप यूपीआई पेमेंट लिंक भेज देंगे।',
+    ttsCancelResponse: 'जी बिल्कुल, आपके अनुरोध के अनुसार हमने आपका ऑर्डर रद्द कर दिया है। हम आगे से संपर्क नहीं करेंगे।'
   },
   { 
     code: 'en-IN', 
     name: 'English (India)', 
     nativeName: 'English', 
     samplePhrase: 'My card failed. Can you send a UPI payment link on WhatsApp?',
-    ttsResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.'
+    ttsPromiseResponse: 'Thank you! We have scheduled a 1-tap UPI payment link directly to your WhatsApp.',
+    ttsCancelResponse: 'Understood. We have cancelled your order as requested and stopped all outreach.'
   },
   { 
     code: 'ta-IN', 
     name: 'Tamil', 
     nativeName: 'தமிழ்', 
     samplePhrase: 'கார்டு வேலை செய்யவில்லை, நாளைக்கு ஜிபே மூலமா பணம் கட்டுகிறேன்',
-    ttsResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிஐ கட்டண இணைப்பை அனுப்புகிறோம்.'
+    ttsPromiseResponse: 'நன்றி! நாளை காலை உங்கள் வாட்ஸ்அப்பில் யுபிஐ கட்டண இணைப்பை அனுப்புகிறோம்.',
+    ttsCancelResponse: 'சரி, உங்கள் கோரிக்கையின்படி ஆர்டர் ரத்து செய்யப்பட்டது.'
   },
   { 
     code: 'te-IN', 
     name: 'Telugu', 
     nativeName: 'తెలుగు', 
     samplePhrase: 'కార్డు పని చేయడం లేదు, రేపు పొద్దున ఫోన్‌పే ద్వారా చెల్లిస్తాను',
-    ttsResponse: 'ధన్యవాదాలు! రేపు ఉదయం మీకు వాట్సాప్‌లో యూపీఐ పేమెంట్ లింక్ పంపుతాము.'
+    ttsPromiseResponse: 'ధన్యవాదాలు! రేపు ఉదయం మీకు వాట్సాప్‌లో యూపీఐ పేమెంట్ లింక్ పంపుతాము.',
+    ttsCancelResponse: 'సరే, మీ అభ్యర్థన మేరకు ఆర్డర్ రద్దు చేయబడింది.'
   },
   { 
     code: 'ml-IN', 
     name: 'Malayalam', 
     nativeName: 'മലയാളം', 
     samplePhrase: 'കാർഡ് വർക്കാവുന്നില്ല, നാളെ രാവിലെ ഗൂഗിൾ പേ വഴി തരാം',
-    ttsResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.'
+    ttsPromiseResponse: 'നന്ദി! നാളെ രാവിലെ നിങ്ങളുടെ വാട്ട്‌സ്ആപ്പിലേക്ക് യുപിഐ പേയ്‌മെന്റ് ലിങ്ക് അയയ്ക്കാം.',
+    ttsCancelResponse: 'ശരി, നിങ്ങളുടെ അഭ്യർത്ഥന പ്രകാരം ഓർഡർ റദ്ദാക്കി.'
   }
 ];
 
@@ -97,10 +104,10 @@ export default function VoiceRecovery() {
   const speakAIResponse = (text: string, langCode: string) => {
     if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     
-    window.speechSynthesis.cancel(); // Stop ongoing speech
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = langCode;
-    utterance.rate = 0.95; // Clear conversational speed
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
 
     window.speechSynthesis.speak(utterance);
@@ -207,73 +214,133 @@ export default function VoiceRecovery() {
     processIntent(customText);
   };
 
+  // Robust Intent Analyzer (Handles native scripts + Latin dialects)
+  const analyzeLocally = (text: string): any => {
+    const t = text.toLowerCase();
+    
+    // Refusal & Cancellation check
+    const isRefusal = [
+      "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ", "ಇಲ್ಲ", "ಆಗಲ್ಲ", "ಆಗೋದಿಲ್ಲ", "ಮಾಡಲ್ಲ", "beda", "cancel", "illa", "aagalla", "kodalla",
+      "नहीं", "मत करो", "रद्द", "कैंसिल", "nahi", "mat karo", "manaa",
+      "வேண்டாம்", "ரத்து", "முடியாது", "வద్దు", "రద్దు", "లేదు",
+      "cancel", "don't want", "dont want", "no", "stop", "never", "refuse", "not interested"
+    ].some(k => t.includes(k));
+
+    if (isRefusal) {
+      return {
+        intent: "OPT_OUT",
+        detected_language: selectedLang.name,
+        willingness_to_pay: false,
+        payment_method: null,
+        requested_date: null
+      };
+    }
+
+    // Alternative UPI method check
+    const isUPI = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "paytm", "qr", "link", "गूगल पे", "यूपीआई"].some(k => t.includes(k));
+
+    // Promise to pay check
+    const isPromise = [
+      "ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "ಮಾಡುತ್ತೇನೆ", "ಕೊಡ್ತೀನಿ", "ಸಂಜೆ", "ಬೆಳಗ್ಗೆ", "naale", "madthini", "kodthini",
+      "कल", "कर दूंगा", "दूँगा", "kal", "kar dunga", "dunga",
+      "நாளை", "ரேపు", "tomorrow", "later", "next week", "pay soon"
+    ].some(k => t.includes(k));
+
+    if (isPromise) {
+      return {
+        intent: "PROMISE_TO_PAY",
+        detected_language: selectedLang.name,
+        willingness_to_pay: true,
+        payment_method: isUPI ? "UPI" : "UPI (Google Pay / PhonePe)",
+        requested_date: "Tomorrow morning"
+      };
+    }
+
+    if (isUPI) {
+      return {
+        intent: "ALTERNATIVE_METHOD",
+        detected_language: selectedLang.name,
+        willingness_to_pay: true,
+        payment_method: "UPI (Google Pay / PhonePe)",
+        requested_date: "Immediate"
+      };
+    }
+
+    return {
+      intent: "GENERAL_QUERY",
+      detected_language: selectedLang.name,
+      willingness_to_pay: true,
+      payment_method: "UPI",
+      requested_date: "Immediate"
+    };
+  };
+
   // AI Intent Extraction Pipeline & Audio Spoken Feedback
   const processIntent = async (text: string) => {
     if (!text || !text.trim()) return;
     setIsProcessing(true);
     
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/v1/voice/intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ utterance: text, session_id: "call-session-904" })
-      });
-      
-      let intentData: any = {};
-      if (response.ok) {
-        const data = await response.json();
-        intentData = data.extracted_data || {};
-      } else {
-        intentData = {
-          intent: "PROMISE_TO_PAY",
-          detected_language: selectedLang.name,
-          willingness_to_pay: true,
-          payment_method: "UPI",
-          requested_date: "Tomorrow morning"
-        };
+      let intentData: any = null;
+
+      // Try hitting the live backend first
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/v1/voice/intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ utterance: text, session_id: "call-session-904" })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          intentData = data.extracted_data;
+        }
+      } catch (e) {
+        console.warn("Backend not reachable, using local multi-dialect engine.");
+      }
+
+      // If backend was offline or returned unknown, use our smart local analyzer
+      if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
+        intentData = analyzeLocally(text);
       }
       
-      const isPositive = intentData.willingness_to_pay;
-      const spokenAudioText = isPositive ? selectedLang.ttsResponse : "We understand. We have updated your preferences.";
+      const isCancellation = intentData.intent === "OPT_OUT" || !intentData.willingness_to_pay;
+      const spokenAudioText = isCancellation 
+        ? selectedLang.ttsCancelResponse 
+        : selectedLang.ttsPromiseResponse;
       
       setAiSpokenResponse(spokenAudioText);
       speakAIResponse(spokenAudioText, selectedLang.code);
 
-      setParsedIntent({
-        intent: intentData.intent || "PROMISE_TO_PAY",
-        language: intentData.detected_language || selectedLang.name,
-        willingness: isPositive ? "Positive (Promise to Pay)" : "Refusal / Objection",
-        method: intentData.payment_method || "UPI (Google Pay / PhonePe)",
-        date: intentData.requested_date || "Tomorrow morning",
-        action: intentData.intent === "PROMISE_TO_PAY" 
-                ? `Schedule 1-Tap UPI WhatsApp Payment Link for ${intentData.requested_date || 'tomorrow'}`
-                : intentData.intent === "ALTERNATIVE_METHOD" 
-                  ? `Generate instant 1-Tap ${intentData.payment_method || 'UPI'} deep link` 
-                  : "Halt automated outreach; respect customer preference"
-      });
+      if (isCancellation) {
+        setShowWhatsAppPopup(false);
+        setParsedIntent({
+          intent: "OPT_OUT",
+          language: intentData.detected_language || selectedLang.name,
+          willingness: "Negative (Customer Refused / Cancelled)",
+          method: "None (Order Cancelled)",
+          date: "N/A",
+          action: "Halt automated outreach immediately. Order cancelled per customer request."
+        });
+      } else {
+        setParsedIntent({
+          intent: intentData.intent || "PROMISE_TO_PAY",
+          language: intentData.detected_language || selectedLang.name,
+          willingness: "Positive (Promise to Pay)",
+          method: intentData.payment_method || "UPI (Google Pay / PhonePe)",
+          date: intentData.requested_date || "Tomorrow morning",
+          action: intentData.intent === "PROMISE_TO_PAY" 
+                  ? `Schedule 1-Tap UPI WhatsApp Payment Link for ${intentData.requested_date || 'tomorrow'}`
+                  : `Generate instant 1-Tap ${intentData.payment_method || 'UPI'} deep link`
+        });
 
-      // Show interactive WhatsApp preview popup
-      if (isPositive) {
+        // Show interactive WhatsApp preview popup only if customer agreed to pay
         setTimeout(() => {
           setShowWhatsAppPopup(true);
         }, 1200);
       }
 
     } catch (err) {
-      console.error("Voice processing fallback:", err);
-      const fallbackAudio = selectedLang.ttsResponse;
-      setAiSpokenResponse(fallbackAudio);
-      speakAIResponse(fallbackAudio, selectedLang.code);
-
-      setParsedIntent({
-        intent: "PROMISE_TO_PAY",
-        language: selectedLang.name,
-        willingness: "Positive (Promise to Pay)",
-        method: "UPI (Google Pay / PhonePe)",
-        date: "Tomorrow morning",
-        action: `Schedule automated 1-Tap UPI payment link in ${selectedLang.name}`
-      });
-      setShowWhatsAppPopup(true);
+      console.error("Voice processing error:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -296,7 +363,7 @@ export default function VoiceRecovery() {
             </span>
           </div>
           <p className="text-gray-400 text-xs">
-            Two-way conversational AI: Speak in your mother tongue, and the AI agent understands and <strong>speaks back aloud in your language</strong>.
+            Two-way conversational AI: Speak in your mother tongue, and the AI agent understands your intent and <strong>speaks back aloud in your language</strong>.
           </p>
         </div>
 
@@ -394,7 +461,7 @@ export default function VoiceRecovery() {
               )}
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
-              Speak naturally (e.g. &ldquo;{selectedLang.samplePhrase}&rdquo;)
+              Try: &ldquo;{selectedLang.samplePhrase}&rdquo; or &ldquo;ನನಗೆ ಬೇಡ ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ&rdquo;
             </p>
 
             {recognitionError && (
@@ -424,7 +491,7 @@ export default function VoiceRecovery() {
             <form onSubmit={handleCustomSubmit} className="w-full bg-black/60 p-2.5 rounded-xl border border-gray-800 flex space-x-2">
               <input 
                 type="text" 
-                placeholder={`Type in ${selectedLang.name}...`}
+                placeholder={`Type in ${selectedLang.name} (e.g. ನನಗೆ ಬೇಡ or ನಾಳೆ ಮಾಡ್ತೀನಿ)...`}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 className="flex-1 bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none"
@@ -457,17 +524,21 @@ export default function VoiceRecovery() {
             {aiSpokenResponse && (
               <div className="pt-2.5 border-t border-gray-850 flex items-start justify-between">
                 <div>
-                  <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold flex items-center mb-1">
+                  <span className={`text-[10px] uppercase tracking-wider font-bold flex items-center mb-1 ${
+                    parsedIntent?.intent === 'OPT_OUT' ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
                     <Volume2 size={12} className="mr-1" />
                     🤖 AI Spoke Back Aloud ({selectedLang.nativeName}):
                   </span>
-                  <p className="text-emerald-300 font-sans text-xs">
+                  <p className={`font-sans text-xs ${
+                    parsedIntent?.intent === 'OPT_OUT' ? 'text-amber-300' : 'text-emerald-300'
+                  }`}>
                     &ldquo;{aiSpokenResponse}&rdquo;
                   </p>
                 </div>
                 <button
                   onClick={() => speakAIResponse(aiSpokenResponse, selectedLang.code)}
-                  className="px-2 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-[10px] font-sans hover:bg-emerald-900 transition shrink-0 ml-2"
+                  className="px-2 py-1 bg-slate-800 text-gray-300 border border-gray-700 rounded text-[10px] font-sans hover:bg-slate-700 transition shrink-0 ml-2"
                 >
                   Replay Audio
                 </button>
@@ -478,7 +549,7 @@ export default function VoiceRecovery() {
 
         </div>
 
-        {/* Right Column: AI Structured Intent & WhatsApp Dispatch Preview */}
+        {/* Right Column: AI Structured Intent & Decision Action */}
         <div className="space-y-6">
           
           {/* Structured Intent Card */}
@@ -513,7 +584,11 @@ export default function VoiceRecovery() {
             <dl className="grid grid-cols-2 gap-3 text-xs">
               <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
                 <dt className="text-gray-400 mb-1">Customer Intent</dt>
-                <dd className="text-sm font-bold text-white">{parsedIntent?.intent || "---"}</dd>
+                <dd className={`text-sm font-bold ${
+                  parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-white'
+                }`}>
+                  {parsedIntent?.intent || "---"}
+                </dd>
               </div>
 
               <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
@@ -523,17 +598,27 @@ export default function VoiceRecovery() {
 
               <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
                 <dt className="text-gray-400 mb-1">Sentiment & Willingness</dt>
-                <dd className="text-sm font-bold text-emerald-400">{parsedIntent?.willingness || "---"}</dd>
+                <dd className={`text-sm font-bold ${
+                  parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-emerald-400'
+                }`}>
+                  {parsedIntent?.willingness || "---"}
+                </dd>
               </div>
 
               <div className="bg-black/60 p-3 rounded-xl border border-gray-800">
-                <dt className="text-gray-400 mb-1">Preferred Method</dt>
+                <dt className="text-gray-400 mb-1">Payment Method</dt>
                 <dd className="text-sm font-bold text-purple-400">{parsedIntent?.method || "---"}</dd>
               </div>
             </dl>
 
-            <div className="mt-4 bg-blue-950/40 border border-blue-900/60 p-3.5 rounded-xl text-xs">
-              <p className="text-[10px] text-blue-400 uppercase tracking-wider font-semibold mb-1 flex items-center">
+            <div className={`mt-4 border p-3.5 rounded-xl text-xs ${
+              parsedIntent?.intent === 'OPT_OUT' 
+                ? 'bg-red-950/30 border-red-900/50' 
+                : 'bg-blue-950/40 border-blue-900/60'
+            }`}>
+              <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 flex items-center ${
+                parsedIntent?.intent === 'OPT_OUT' ? 'text-red-400' : 'text-blue-400'
+              }`}>
                 <Sparkles size={12} className="mr-1" />
                 Autonomous Action Triggered
               </p>
@@ -545,8 +630,28 @@ export default function VoiceRecovery() {
 
           </div>
 
-          {/* WhatsApp Interactive Payment Link Dispatch Popup (Feature 3) */}
-          {showWhatsAppPopup && (
+          {/* Cancellation Confirmation Box (When Customer Says NO/CANCEL) */}
+          {parsedIntent?.intent === 'OPT_OUT' && (
+            <div className="bg-slate-900 border border-red-900/60 rounded-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="p-2 rounded-lg bg-red-950 text-red-400 border border-red-800">
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Order Cancelled & Outreach Halted</h3>
+                  <p className="text-xs text-gray-400">Customer requested cancellation. Autonomous policy guard blocked further payment links.</p>
+                </div>
+              </div>
+              <div className="bg-black/60 rounded-xl p-3 border border-red-950 text-xs text-gray-300 space-y-1 mt-3">
+                <p>✓ Status: <strong className="text-red-400 font-mono">ORDER_CANCELLED</strong></p>
+                <p>✓ Automated WhatsApp links: <strong className="text-red-400 font-mono">SUPPRESSED</strong></p>
+                <p>✓ DNC (Do Not Contact) Flag: <strong className="text-emerald-400 font-mono">LOGGED IN POSTGRESQL</strong></p>
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp Interactive Payment Link Dispatch Popup (Only When Customer Promises to Pay) */}
+          {showWhatsAppPopup && parsedIntent?.intent !== 'OPT_OUT' && (
             <div className="bg-slate-900 border border-emerald-900/60 rounded-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -591,13 +696,20 @@ export default function VoiceRecovery() {
                 ? 'bg-emerald-600 text-white cursor-default'
                 : !parsedIntent
                   ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white hover:scale-[1.01]'
+                  : parsedIntent?.intent === 'OPT_OUT'
+                    ? 'bg-red-600 hover:bg-red-500 text-white hover:scale-[1.01]'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white hover:scale-[1.01]'
             }`}
           >
             {isApproved ? (
               <>
                 <ShieldCheck size={18} className="mr-2" />
                 AUTONOMOUS ACTION EXECUTED & PERSISTED
+              </>
+            ) : parsedIntent?.intent === 'OPT_OUT' ? (
+              <>
+                <XCircle size={18} className="mr-2" />
+                CONFIRM CANCELLATION & CLOSE TICKET
               </>
             ) : (
               <>

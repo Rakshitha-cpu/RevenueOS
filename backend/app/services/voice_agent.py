@@ -35,7 +35,8 @@ class VoiceAgent:
                 "intent": "UNKNOWN",
                 "payment_method": None,
                 "requested_date": None,
-                "willingness_to_pay": False
+                "willingness_to_pay": False,
+                "detected_language": "Unknown"
             }
 
         # 1. LIVE GEMINI 2.5 FLASH INFERENCE
@@ -47,11 +48,18 @@ class VoiceAgent:
 
             Utterance: "{user_utterance}"
 
-            Extract and return ONLY a valid JSON object with the following schema:
+            Classify into one of the following exact intents:
+            - "OPT_OUT" (If the customer says they DO NOT want the product, want to CANCEL the order, or say NO/STOP/REFUSE, e.g. "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ", "cancel my order", "nahi chahiye", "illai")
+            - "PROMISE_TO_PAY" (If the customer agrees to pay later or tomorrow, e.g. "ನಾಳೆ ಮಾಡ್ತೀನಿ", "kal dunga", "will pay tomorrow")
+            - "ALTERNATIVE_METHOD" (If the customer asks for UPI, GPay, PhonePe, QR code, or link, e.g. "UPI link kalisi", "PhonePe bhej do")
+            - "DISPUTE" (If the customer claims fraud or unauthorized charge)
+            - "GENERAL_QUERY" (Questions about price or product)
+
+            Extract and return ONLY a valid JSON object:
             {{
-                "intent": "PROMISE_TO_PAY" | "ALTERNATIVE_METHOD" | "DISPUTE" | "REFUSAL_TO_PAY" | "OPT_OUT" | "GENERAL_QUERY",
+                "intent": "OPT_OUT" | "PROMISE_TO_PAY" | "ALTERNATIVE_METHOD" | "DISPUTE" | "GENERAL_QUERY",
                 "payment_method": "UPI" | "CREDIT_CARD" | "DEBIT_CARD" | "NETBANKING" | "CASH" | null,
-                "requested_date": string (e.g. "tomorrow", "next week", "evening", "1st of month") | null,
+                "requested_date": string | null,
                 "willingness_to_pay": boolean,
                 "detected_language": string (e.g. "Kannada", "Hindi", "English", "Tamil", "Telugu", "Malayalam")
             }}
@@ -70,7 +78,7 @@ class VoiceAgent:
             except Exception as e:
                 print(f"LLM voice extraction failed: {e}")
 
-        # 2. DETERMINISTIC MULTILINGUAL FALLBACK ENGINE (Supports Native Script & Latin Transliterations)
+        # 2. DETERMINISTIC MULTILINGUAL FALLBACK ENGINE
         utterance = user_utterance.lower().strip()
         
         intent = {
@@ -81,36 +89,58 @@ class VoiceAgent:
             "detected_language": "Unknown"
         }
 
-        # Kannada keywords (Native: ನಾಳೆ, ಮಾಡ್ತೀನಿ, ಕೊಡ್ತೀನಿ, ದುಡ್ಡು, ಯುಪಿಐ | Latin: naale, madthini, kodthini, duddu, illa, beda)
-        kannada_promise = ["ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "ಮಾಡುತ್ತೇನೆ", "ಕೊಡ್ತೀನಿ", "ಕೊಡುತ್ತೇನೆ", "ಸಂಜೆ", "naale", "madthini", "maduthene", "kodthini", "pay madthini", "kalistheeni"]
-        kannada_refusal = ["ಬೇಡ", "ಇಲ್ಲ", "ಆಗಲ್ಲ", "ಆಗೋದಿಲ್ಲ", "ಮಾಡಲ್ಲ", "beda", "illa", "aagalla", "aagodilla", "madalla"]
-        kannada_upi = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "upi", "gpay", "phonepe", "paytm"]
+        # Kannada keywords
+        kannada_refusal = [
+            "ಬೇಡ", "ಕ್ಯಾನ್ಸಲ್", "ಕ್ಯಾನ್ಸಲ್ ಮಾಡಿ", "ಕ್ಯಾನ್ಸಲ್ ಮಾಡು", "ಇಲ್ಲ", "ಆಗಲ್ಲ", "ಆಗೋದಿಲ್ಲ", "ಮಾಡಲ್ಲ", 
+            "beda", "cancel", "cancel madi", "cancel maadi", "illa", "aagalla", "aagodilla", "madalla", "duddu illa", "kodalla"
+        ]
+        kannada_promise = [
+            "ನಾಳೆ", "ಮಾಡ್ತೀನಿ", "ಮಾಡುತ್ತೇನೆ", "ಕೊಡ್ತೀನಿ", "ಕೊಡುತ್ತೇನೆ", "ಸಂಜೆ", "ಬೆಳಗ್ಗೆ", "ಮತ್ತೆ", 
+            "naale", "madthini", "maduthene", "kodthini", "pay madthini", "kalistheeni"
+        ]
+        kannada_upi = ["ಯುಪಿಐ", "ಜಿಪೇ", "ಫೋನ್‌ಪೇ", "ಪೇಟಿಎಂ", "ಲಿಂಕ್", "gpay", "phonepe", "paytm", "upi"]
 
-        # Hindi keywords (Native: कल, कर दूंगा, पे, नहीं | Latin: kal, kar dunga, dunga, nahi, mat karo)
-        hindi_promise = ["कल", "कर दूंगा", "दूँगा", "शाम को", "kal", "kar dunga", "dunga", "subah", "shaam"]
-        hindi_refusal = ["नहीं", "मत करो", "nahi", "mat karo", "manaa"]
+        # Hindi keywords
+        hindi_refusal = ["नहीं", "मत करो", "रद्द", "कैंसिल", "nahi", "nahi chahiye", "mat karo", "cancel", "manaa"]
+        hindi_promise = ["कल", "कर दूंगा", "दूँगा", "शाम को", "सुबह", "kal", "kar dunga", "dunga", "subah", "shaam"]
+        hindi_upi = ["यूपीआई", "गूगल पे", "फोनपे", "पेटीएम"]
 
-        # Tamil keywords (Native: நாளை, கட்டு, முடியாது | Latin: naalai, kattugiren, mudiyathu)
+        # Tamil keywords
+        tamil_refusal = ["வேண்டாம்", "ரத்து", "முடியாது", "இல்லை", "vendaam", "cancel", "mudiyathu", "illai"]
         tamil_promise = ["நாளை", "கட்டுகிறேன்", "naalai", "kattugiren", "katturen"]
-        tamil_refusal = ["முடியாது", "இல்லை", "mudiyathu", "illai"]
 
-        # Telugu keywords (Native: రేపు, చేస్తాను, లేదు | Latin: repu, chestanu, ledu)
+        # Telugu keywords
+        telugu_refusal = ["వద్దు", "రద్దు", "లేదు", "vaddu", "cancel", "ledu"]
         telugu_promise = ["రేపు", "చేస్తాను", "repu", "chestanu", "katthanu"]
-        telugu_refusal = ["లేదు", "వద్దు", "ledu", "vaddu"]
 
-        # Malayalam keywords (Native: നാളെ, ഇല്ല | Latin: naale, tharam)
-        malayalam_promise = ["നാളെ", "തരാം", "naale", "tharam", "cheyyam"]
-        malayalam_refusal = ["ഇല്ല", "illa", "pattilla"]
-
-        # General English
+        # English keywords
+        english_refusal = ["cancel", "don't want", "dont want", "no", "stop", "never", "refuse", "not interested", "dont call", "don't call"]
         english_promise = ["tomorrow", "later", "next week", "pay soon", "evening", "morning", "will pay"]
-        english_refusal = ["no", "don't", "cancel", "stop", "never", "refuse", "not paying"]
 
-        # Evaluation Pipeline
-        if any(w in utterance for w in (kannada_promise + hindi_promise + tamil_promise + telugu_promise + malayalam_promise + english_promise)):
+        # =========================================================================
+        # CRITICAL PRIORITY: 1. CHECK REFUSAL / OPT_OUT FIRST!
+        # =========================================================================
+        if any(w in utterance for w in (kannada_refusal + hindi_refusal + tamil_refusal + telugu_refusal + english_refusal)):
+            intent["intent"] = "OPT_OUT"
+            intent["willingness_to_pay"] = False
+            intent["payment_method"] = None
+            if any(w in utterance for w in kannada_refusal):
+                intent["detected_language"] = "Kannada"
+            elif any(w in utterance for w in hindi_refusal):
+                intent["detected_language"] = "Hindi"
+            elif any(w in utterance for w in tamil_refusal):
+                intent["detected_language"] = "Tamil"
+            elif any(w in utterance for w in telugu_refusal):
+                intent["detected_language"] = "Telugu"
+            else:
+                intent["detected_language"] = "English"
+
+        # 2. CHECK PROMISE TO PAY
+        elif any(w in utterance for w in (kannada_promise + hindi_promise + tamil_promise + telugu_promise + english_promise)):
             intent["intent"] = "PROMISE_TO_PAY"
             intent["requested_date"] = "tomorrow"
             intent["willingness_to_pay"] = True
+            intent["payment_method"] = "UPI"
             if any(w in utterance for w in kannada_promise):
                 intent["detected_language"] = "Kannada"
             elif any(w in utterance for w in hindi_promise):
@@ -119,15 +149,15 @@ class VoiceAgent:
                 intent["detected_language"] = "Tamil"
             elif any(w in utterance for w in telugu_promise):
                 intent["detected_language"] = "Telugu"
+            else:
+                intent["detected_language"] = "English"
 
-        elif any(w in utterance for w in (kannada_upi + ["upi", "gpay", "phonepe", "paytm", "qr", "link", "google pay"])):
+        # 3. CHECK ALTERNATIVE UPI PAYMENT METHOD
+        elif any(w in utterance for w in (kannada_upi + hindi_upi + ["upi", "gpay", "phonepe", "paytm", "google pay", "qr code", "payment link"])):
             intent["intent"] = "ALTERNATIVE_METHOD"
             intent["payment_method"] = "UPI"
             intent["willingness_to_pay"] = True
-
-        elif any(w in utterance for w in (kannada_refusal + hindi_refusal + tamil_refusal + telugu_refusal + malayalam_refusal + english_refusal)):
-            intent["intent"] = "OPT_OUT"
-            intent["willingness_to_pay"] = False
+            intent["requested_date"] = "immediate"
 
         return intent
 
