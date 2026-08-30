@@ -337,7 +337,7 @@ export default function AICommandCenter() {
                 <span className="text-gray-400 font-mono">25% (50 txns)</span>
               </div>
               <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '25%' }}></div>
+                  <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '25%' }}></div>
               </div>
             </div>
           </div>
@@ -345,23 +345,28 @@ export default function AICommandCenter() {
 
       </div>
 
-      {/* Evaluator Showcase Section: Failure Recovery Log & Policy Guard Proof */}
-      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-6">
+      {/* Evaluator Showcase Section: Collapsible Progressive Disclosure */}
+      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-4">
         
-        {/* Failure Recovery Log Table */}
-        <div className="bg-slate-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
-            <h3 className="text-base font-bold text-white flex items-center">
-              <AlertTriangle className="text-amber-400 mr-2" size={18} />
-              Failure Recovery Log (What Broke & How We Fixed It)
-            </h3>
-            <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-0.5 rounded-full font-mono">
-              Evaluator Proof Active
+        {/* Collapsible Failure Recovery Proof Accordion */}
+        <details className="group bg-slate-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-200 text-white">
+          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-800/60 transition">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-amber-950 text-amber-400 rounded-xl border border-amber-900">
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Failure Recovery Proof (What Broke & How We Fixed It)</h4>
+                <p className="text-xs text-gray-400">Click to view 3 documented runtime edge cases and resolution impact</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-amber-400 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Proof
             </span>
-          </div>
+          </summary>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="p-5 pt-0 border-t border-gray-800 overflow-x-auto">
+            <table className="w-full text-left text-xs font-sans mt-3">
               <thead className="bg-black/50 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800">
                 <tr>
                   <th className="py-2.5 px-3">Initial Failure</th>
@@ -392,22 +397,27 @@ export default function AICommandCenter() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
-        {/* Policy Guard Enforcement Log Table */}
-        <div className="bg-slate-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
-            <h3 className="text-base font-bold text-white flex items-center">
-              <Shield className="text-emerald-400 mr-2" size={18} />
-              Deterministic Policy Guard Enforcement Log
-            </h3>
-            <span className="text-xs bg-blue-950 text-blue-400 border border-blue-800 px-2.5 py-0.5 rounded-full font-mono">
-              DPDP Act & RBI Compliant
+        {/* Collapsible Policy Guard Enforcement Accordion */}
+        <details className="group bg-slate-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-200 text-white">
+          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-800/60 transition">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-950 text-blue-400 rounded-xl border border-blue-900">
+                <Shield size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Deterministic Policy Guard Enforcement Log</h4>
+                <p className="text-xs text-gray-400">Click to view deterministic DPDP Act and RBI threshold blocks</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-blue-400 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Proof
             </span>
-          </div>
+          </summary>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="p-5 pt-0 border-t border-gray-800 overflow-x-auto">
+            <table className="w-full text-left text-xs font-sans mt-3">
               <thead className="bg-black/50 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800">
                 <tr>
                   <th className="py-2.5 px-3">Timestamp</th>
@@ -438,7 +448,7 @@ export default function AICommandCenter() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
       </div>
     </div>
