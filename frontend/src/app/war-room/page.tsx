@@ -28,7 +28,15 @@ export default function WarRoomDashboard() {
               Live Production
             </span>
           </div>
-          <p className="text-slate-500 text-sm">Real-time overview of failed payments, AI telecaller intervention, and T+0 recovery.</p>
+          <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono mt-1.5">
+            <span className="flex items-center text-emerald-600 font-semibold"><Shield size={13} className="mr-1" /> HMAC-SHA256</span>
+            <span>•</span>
+            <span className="text-slate-600">Idempotency 15m</span>
+            <span>•</span>
+            <span className="text-slate-600">Maker-Checker &gt;₹25k</span>
+            <span>•</span>
+            <span className="text-slate-600">PCI-CoFT</span>
+          </div>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -50,7 +58,7 @@ export default function WarRoomDashboard() {
       </header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-3xl shadow-xl shadow-slate-900/10 border border-slate-800 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
           <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
             <Target size={120} />
@@ -82,34 +90,6 @@ export default function WarRoomDashboard() {
           <p className="text-xs text-emerald-600 flex items-center font-medium">
             <Shield size={14} className="mr-1" /> 0 user fatigue violations
           </p>
-        </div>
-      </div>
-
-      {/* Enterprise Security & Payment Integrity Mesh */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-4 mb-8 border border-blue-900/50 shadow-md text-white">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-2 font-bold text-blue-300">
-            <Shield size={16} className="text-emerald-400" />
-            <span>FINTECH SECURITY MESH:</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-[11px]">
-            <div className="flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-lg border border-slate-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-slate-300">HMAC-SHA256: <strong className="text-emerald-400">ACTIVE</strong></span>
-            </div>
-            <div className="flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-lg border border-slate-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-              <span className="text-slate-300">Idempotency: <strong className="text-blue-300">15m TTL</strong></span>
-            </div>
-            <div className="flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-lg border border-slate-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-              <span className="text-slate-300">Maker-Checker: <strong className="text-amber-300">&gt;₹25k Tier</strong></span>
-            </div>
-            <div className="flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-lg border border-slate-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-              <span className="text-slate-300">Tokenized: <strong className="text-purple-300">PCI-CoFT</strong></span>
-            </div>
-          </div>
         </div>
       </div>
 
