@@ -147,10 +147,30 @@ export default function BatchEvaluationPage() {
         </div>
       </div>
 
-      {/* Filter Tabs & Data Table */}
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+      {/* Filter Tabs & Collapsible Data Table Accordion */}
+      <details className="group bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-200">
         
-        <div className="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center flex-wrap gap-3">
+        <summary className="p-5 sm:p-6 bg-slate-50 border-b border-slate-200 flex justify-between items-center cursor-pointer list-none select-none hover:bg-slate-100/80 transition">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-blue-100 text-blue-700 rounded-2xl border border-blue-200">
+              <Database size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">50-Transaction Benchmark Audit Ledger</h3>
+              <p className="text-xs text-slate-500">Click to expand forensic transaction logs across HDFC, SBI, ICICI, and Axis</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="hidden sm:inline-block text-xs font-mono bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+              {BATCH_RESULTS.length} Transactions Verified
+            </span>
+            <span className="text-xs font-bold text-blue-600 group-open:rotate-180 transition-transform duration-200">
+              ▼ Expand Ledger
+            </span>
+          </div>
+        </summary>
+
+        <div className="p-5 bg-slate-50/50 border-b border-slate-200 flex justify-between items-center flex-wrap gap-3">
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setFilter('ALL')}
@@ -200,7 +220,6 @@ export default function BatchEvaluationPage() {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredData.map((row) => {
                 const isSuccess = row.status === 'RECOVERED' || row.status === 'T0_REFUNDED';
-                const isHalted = row.status === 'OPT_OUT_HALTED';
                 return (
                   <tr key={row.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 px-4 font-mono font-bold text-blue-600">{row.id}</td>
@@ -239,7 +258,7 @@ export default function BatchEvaluationPage() {
           </table>
         </div>
 
-      </div>
+      </details>
 
     </div>
   );
