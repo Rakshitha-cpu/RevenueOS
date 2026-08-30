@@ -104,31 +104,39 @@ export default function CustomerProfile() {
             <h3 className="text-sm font-bold text-blue-200 uppercase tracking-wider mb-4 relative z-10">AI Recommendation</h3>
             <h2 className="text-3xl font-bold mb-8 relative z-10 leading-tight">Use UPI payment link instead of another card retry.</h2>
             
-            <div className="bg-blue-700/40 rounded-xl p-6 border border-blue-500/30 relative z-10">
-              <p className="font-semibold text-blue-100 mb-4 uppercase tracking-wider text-xs">Reasoning Engine</p>
-              <ul className="space-y-4">
+            <div className="bg-blue-700/40 rounded-xl p-5 border border-blue-500/30 relative z-10 space-y-3">
+              <div className="flex justify-between items-center border-b border-blue-500/40 pb-2">
+                <p className="font-bold text-white uppercase tracking-wider text-xs flex items-center">
+                  <Sparkles size={14} className="mr-1.5 text-yellow-300" />
+                  Explainability &amp; Economic Rationale
+                </p>
+                <span className="text-[11px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/30">
+                  Expected Net: ₹7,820 (97.7% Yield)
+                </span>
+              </div>
+              <ul className="space-y-2 text-xs">
                 <li className="flex items-start">
-                  <CheckCircle size={20} className="text-blue-300 mr-3 mt-0.5 shrink-0" />
-                  <span className="text-blue-50">Customer historically prefers UPI for transactions over ₹5,000.</span>
+                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
+                  <span className="text-blue-50"><strong>High Intent Signal:</strong> Customer completed 12 previous UPI transactions on Razorpay.</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle size={20} className="text-blue-300 mr-3 mt-0.5 shrink-0" />
-                  <span className="text-blue-50">Previous background card attempts failed due to bank network limits.</span>
+                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
+                  <span className="text-blue-50"><strong>Root Cause:</strong> HDFC Card E_504 timeout; retrying the same card has &lt;18% success probability.</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle size={20} className="text-blue-300 mr-3 mt-0.5 shrink-0" />
-                  <span className="text-blue-50">Generates the lowest customer friction under current policy limits.</span>
+                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
+                  <span className="text-blue-50"><strong>Least Cost Intervention:</strong> WhatsApp Payment Link costs ₹1.20 vs. ₹45.00 for call center outreach.</span>
                 </li>
               </ul>
             </div>
             
-            <div className="mt-8 flex flex-col space-y-3 relative z-10">
-              <div className="flex items-center text-sm font-semibold text-blue-200 mb-2">
+            <div className="mt-6 flex flex-col space-y-3 relative z-10">
+              <div className="flex items-center text-xs font-semibold text-blue-200 mb-1 font-mono">
                 <span className="flex h-2 w-2 relative mr-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                AUTOPILOT ACTIVE: THIS STRATEGY WAS EXECUTED AUTONOMOUSLY
+                POLICYGUARD GATED: DISPATCHED WITH ZERO DIRECT FINANCIAL AUTHORITY
               </div>
               
               <div className="flex flex-wrap gap-4">
