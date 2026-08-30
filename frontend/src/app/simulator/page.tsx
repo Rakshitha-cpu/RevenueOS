@@ -8,27 +8,26 @@ export default function WhatIfSimulator() {
   const [deployed, setDeployed] = useState(false);
 
   const strategies = [
-    { name: "Immediate retry", expected: "₹6.4L", risk: "Low", color: "bg-green-100 text-green-700" },
-    { name: "Email + link", expected: "₹7.3L", risk: "Low", color: "bg-green-100 text-green-700" },
-    { name: "Payment link", expected: "₹8.1L", risk: "Low", color: "bg-green-100 text-green-700", recommended: true },
-    { name: "Voice + UPI", expected: "₹9.3L", risk: "Medium", color: "bg-yellow-100 text-yellow-700" },
-    { name: "Human escalation", expected: "₹5.9L", risk: "Low", color: "bg-green-100 text-green-700" },
+    { name: "DO NOTHING (Suppression)", expectedGross: "₹0", cost: "₹0", expectedNet: "₹0", risk: "Zero", roi: "0%", color: "bg-slate-100 text-slate-700" },
+    { name: "Immediate Card Retry", expectedGross: "₹4.8L", cost: "₹12K (Bank Fee)", expectedNet: "₹4.68L", risk: "Low", roi: "3900%", color: "bg-green-100 text-green-700" },
+    { name: "Adaptive Payment Link", expectedGross: "₹8.1L", cost: "₹28K (Discounts/SMS)", expectedNet: "₹7.82L", risk: "Low", roi: "2790%", color: "bg-green-100 text-green-700", recommended: true },
+    { name: "Voice Telecaller + UPI", expectedGross: "₹9.3L", cost: "₹1.4L (Op Cost + Voucher)", expectedNet: "₹7.90L", risk: "Medium", roi: "564%", color: "bg-yellow-100 text-yellow-700" },
+    { name: "Human Review Escalation", expectedGross: "₹5.9L", cost: "₹95K (Agent Overhead)", expectedNet: "₹4.95L", risk: "Low", roi: "521%", color: "bg-green-100 text-green-700" },
   ];
 
   const handleDeploy = () => {
     setIsDeploying(true);
-    // Simulate the policy check and execution delay
     setTimeout(() => {
       setIsDeploying(false);
       setDeployed(true);
-    }, 2000);
+    }, 1500);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">What-If Simulator</h1>
-        <p className="text-gray-500 mt-1">Compare AI recovery strategies and simulate financial impact.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Adaptive Recovery Strategy Simulator</h1>
+        <p className="text-gray-500 mt-1">Evaluates expected recovery probability, friction, communication costs, and net revenue yield.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -36,32 +35,36 @@ export default function WhatIfSimulator() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
             <div>
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue Opportunity</p>
-              <h2 className="text-3xl font-bold text-gray-900">₹10.0L</h2>
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Cohort Revenue at Risk</p>
+              <h2 className="text-3xl font-bold text-gray-900">₹10.0L <span className="text-xs text-gray-400 font-normal">(100 Synthetic Carts)</span></h2>
             </div>
             <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
               <Zap size={24} />
             </div>
           </div>
           
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="p-4 font-semibold text-sm text-gray-500">Strategy</th>
-                <th className="p-4 font-semibold text-sm text-gray-500">Expected Recovery</th>
-                <th className="p-4 font-semibold text-sm text-gray-500">Risk Profile</th>
+              <tr className="border-b border-gray-200 bg-gray-50/50">
+                <th className="p-3.5 font-semibold text-gray-500">Recovery Strategy</th>
+                <th className="p-3.5 font-semibold text-gray-500">Gross Recovered</th>
+                <th className="p-3.5 font-semibold text-gray-500">Intervention Cost</th>
+                <th className="p-3.5 font-semibold text-gray-900 font-bold">Expected Net Yield</th>
+                <th className="p-3.5 font-semibold text-gray-500">Risk Profile</th>
               </tr>
             </thead>
             <tbody>
               {strategies.map((s, idx) => (
-                <tr key={idx} className={`border-b border-gray-100 hover:bg-gray-50 transition ${s.recommended ? 'bg-blue-50/20' : ''}`}>
-                  <td className="p-4 flex items-center font-medium">
-                    {s.recommended && <CheckCircle size={16} className="text-blue-500 mr-2" />}
+                <tr key={idx} className={`border-b border-gray-100 hover:bg-gray-50 transition ${s.recommended ? 'bg-blue-50/30' : ''}`}>
+                  <td className="p-3.5 flex items-center font-medium">
+                    {s.recommended && <CheckCircle size={15} className="text-blue-600 mr-1.5 shrink-0" />}
                     {s.name}
                   </td>
-                  <td className="p-4 font-bold">{s.expected}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${s.color}`}>
+                  <td className="p-3.5 font-semibold text-gray-600">{s.expectedGross}</td>
+                  <td className="p-3.5 text-red-500 font-mono">{s.cost}</td>
+                  <td className="p-3.5 font-bold text-emerald-700 font-mono text-sm">{s.expectedNet}</td>
+                  <td className="p-3.5">
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${s.color}`}>
                       {s.risk}
                     </span>
                   </td>
@@ -71,17 +74,21 @@ export default function WhatIfSimulator() {
           </table>
         </div>
 
-        {/* Right Column - Recommendation & Deploy */}
+        {/* Right Column - Recommendation & Explainability */}
         <div className="space-y-6">
           <div className="bg-blue-600 rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 opacity-10">
-              <Zap size={120} />
+            <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">Optimal Strategy Selection</h3>
+            <h2 className="text-2xl font-bold mb-2">Adaptive Payment Link</h2>
+            <div className="bg-blue-700/50 rounded-lg p-3 text-xs space-y-1.5 mb-4 border border-blue-500/40">
+              <div className="font-bold text-white flex items-center">
+                <span>💡 WHY THIS ACTION?</span>
+              </div>
+              <p className="text-blue-100 leading-relaxed text-[11px]">
+                • Highest Net Yield (<strong>₹7.82L</strong> vs ₹4.95L human review).<br/>
+                • Customer cohort has 76% historical UPI preference.<br/>
+                • Zero call fatigue: respects &lt;2 contact limit.
+              </p>
             </div>
-            <h3 className="text-sm font-semibold text-blue-200 uppercase tracking-wider mb-1">AI Recommendation</h3>
-            <h2 className="text-2xl font-bold mb-4">Payment Link</h2>
-            <p className="text-blue-100 text-sm leading-relaxed mb-6 relative z-10">
-              <strong>Voice + UPI</strong> has higher expected recovery, but <strong>Payment Link</strong> achieves a better recovery/friction tradeoff under the current merchant policy (Max 2 contacts).
-            </p>
             
             <button 
               onClick={handleDeploy}
@@ -97,34 +104,37 @@ export default function WhatIfSimulator() {
               {deployed ? (
                 <>
                   <CheckCircle size={18} />
-                  <span>PLAN DEPLOYED</span>
+                  <span>POLICY APPROVED &amp; DEPLOYED</span>
                 </>
               ) : isDeploying ? (
-                <span>AUTHORIZING...</span>
+                <span>POLICYGUARD VALIDATING...</span>
               ) : (
                 <>
                   <Play size={18} />
-                  <span>DEPLOY PLAN</span>
+                  <span>EXECUTE BOUNDED PLAN</span>
                 </>
               )}
             </button>
           </div>
 
           {/* Policy Guard Check UI */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
-               <ShieldAlert size={16} className="mr-2 text-gray-500" />
-               Pre-Flight Policy Check
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-xs space-y-2.5">
+             <h3 className="font-semibold text-gray-900 flex items-center">
+               <ShieldAlert size={16} className="mr-2 text-blue-600" />
+               PolicyGuard Deterministic Pre-Flight Gate
              </h3>
-             <ul className="space-y-3 text-sm">
+             <ul className="space-y-2 text-gray-700">
                <li className="flex items-center text-green-700 font-medium">
-                 <CheckCircle size={14} className="mr-2" /> Fraud score within limits (&lt;85)
+                 <CheckCircle size={14} className="mr-2 text-emerald-600 shrink-0" /> Fraud threshold verified (Risk 12 &lt; 85)
                </li>
                <li className="flex items-center text-green-700 font-medium">
-                 <CheckCircle size={14} className="mr-2" /> Value under ₹50k threshold
+                 <CheckCircle size={14} className="mr-2 text-emerald-600 shrink-0" /> Expected Net Yield is positive (&gt;₹0)
                </li>
                <li className="flex items-center text-green-700 font-medium">
-                 <CheckCircle size={14} className="mr-2" /> Customer contact limits OK (1/2)
+                 <CheckCircle size={14} className="mr-2 text-emerald-600 shrink-0" /> Customer contact counter within bounds (1/2)
+               </li>
+               <li className="flex items-center text-green-700 font-medium">
+                 <CheckCircle size={14} className="mr-2 text-emerald-600 shrink-0" /> DND suppression flag is FALSE
                </li>
              </ul>
           </div>
