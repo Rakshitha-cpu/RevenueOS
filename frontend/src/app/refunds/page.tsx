@@ -390,8 +390,8 @@ export default function InstantRefundsPage() {
                 <CheckCircle2 size={18} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white">Recent T+0 Verified Instant Refunds (Live Stream)</h4>
-                <p className="text-xs text-gray-400">Click to view real-time NPCI UTR generation and sub-3-second reversals</p>
+                <h4 className="text-sm font-bold text-white">Recent Simulated T+0 Instant Refunds (Execution Stream)</h4>
+                <p className="text-xs text-gray-400">Click to view simulated UTR generation and sub-3-second pipeline latency</p>
               </div>
             </div>
             <span className="text-xs font-semibold text-emerald-400 group-open:rotate-180 transition-transform duration-200">
