@@ -54,57 +54,7 @@ class VoiceAgent:
                 history_lines.append(f"{role}: {item.get('text', '')}")
             history_context = "\nPrevious Conversation History:\n" + "\n".join(history_lines) + "\n"
 
-        # 1. LIVE GEMINI 2.5 FLASH TELECALLER CONVERSATION
-        if self.client:
-            prompt = f"""
-            You are the official Razorpay Assistant, a human-grade, alert, and courteous customer verification telecaller for Razorpay.
-            You are speaking with customer Rajesh Kumar (+91 98450 XXXXX) regarding his pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650).
-            
-            {history_context}
-            Customer just said: "{user_utterance}"
-
-            CRITICAL MULTI-TURN RULES:
-            1. PROGRESS THE CONVERSATION - NEVER REPEAT THE SAME ANSWER TWICE IN A ROW.
-            2. If the customer requests "Send SMS Copy":
-               - Confirm that the SMS with payment link has been dispatched to +91 98450 XXXXX.
-               - Ask if they'd like to pay now via Google Pay or PhonePe.
-            3. If the customer requests "Open WhatsApp Link" or "Switch to UPI":
-               - Confirm the green-badged Razorpay WhatsApp link is open.
-               - Ask which UPI app they prefer: Google Pay, PhonePe, or Paytm.
-            4. If the customer requests "Verify Card Details" or "Retry Card":
-               - Explain the HDFC gateway timeout (E_504) and offer a 10-minute retry or 1-tap UPI bypass.
-            5. If the customer asks to CANCEL:
-               - Inspect motive (price too high, delivery delay, ordered by mistake) and offer SAVE232 (₹4,418) or human manager transfer.
-            6. If customer asks for human manager:
-               - Execute live transfer to Senior Specialist Vikram.
-            7. Speak naturally in the customer's language.
-
-            Return valid JSON only:
-            {{
-                "ai_spoken_reply": string,
-                "intent": string,
-                "detected_language": string,
-                "willingness_to_pay": boolean,
-                "confidence_score": number,
-                "sentiment": string,
-                "payment_method": string or null,
-                "requested_date": string or null,
-                "recommended_action": string,
-                "quick_replies": [string]
-            }}
-            """
-            
-            try:
-                response = self.client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
-                raw_text = response.text.replace('```json', '').replace('```', '').strip()
-                return json.loads(raw_text)
-            except Exception as e:
-                print(f"LLM telecaller error: {e}")
-
-        # 2. DETERMINISTIC MULTI-TURN TELECALLER ENGINE (Progressive States)
+        # 1. DETERMINISTIC MULTI-TURN TELECALLER ENGINE (Exact Intent Precedence)
         t = user_utterance.lower().strip()
 
         # Step A: Wrong Number / DND
@@ -121,6 +71,38 @@ class VoiceAgent:
                 "requested_date": None,
                 "recommended_action": "DPDP / DNC Rule Triggered: Suppressed further retries",
                 "quick_replies": ["Done, Thank You"]
+            }
+
+        # Step B: Payment Confirmed (Paid via Google Pay, PhonePe, etc.)
+        if re.search(r'\b(paid|done|completed|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|भुगतान किया|செಲುத்தப்பட்டது|చెల్లించాను)\b', t):
+            is_kn = any(w in t for w in ["ಪಾವತಿಸಿದೆ", "ಮಾಡಿದೆ"])
+            return {
+                "ai_spoken_reply": "ಅದ್ಭುತ ರಾಜೇಶ್ ಅವರೇ! ನಿಮ್ಮ ₹4,650 ಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ತಕ್ಷಣ ರವಾನೆಯಾಗಲಿದೆ. ರಶೀದಿ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿದೆ. ಧನ್ಯವಾದಗಳು!" if is_kn else "Awesome Rajesh! Your payment of ₹4,650 is confirmed. Order #RZP-8921 is approved for priority warehouse dispatch. Receipt generated on WhatsApp. Thank you!",
+                "intent": "PAYMENT_CONFIRMED",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 99,
+                "sentiment": "Order Approved",
+                "payment_method": "UPI (Confirmed)",
+                "requested_date": "Immediate",
+                "recommended_action": "Payment confirmed, invoice generated, and order dispatched",
+                "quick_replies": ["✓ Order Complete", "Download Tax Invoice"]
+            }
+
+        # Step C: Delivery Delay Concern
+        if re.search(r'\b(delay|slow|delivery|time|taking too long|late|ತಡ|ವಿಳಂಬ|देरी|समय|தாமதம்|ఆలస్యం|വൈകൽ)\b', t):
+            is_kn = any(w in t for w in ["ತಡ", "ವಿಳಂಬ"])
+            return {
+                "ai_spoken_reply": "ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡೆ! ನಾನು ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 ಅನ್ನು 24 ಗಂಟೆಗಳ ಒಳಗೆ ತಲುಪಿಸಲು 'ಪ್ರಯಾರಿಟಿ ಡಿಸ್ಪ್ಯಾಚ್' ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ್ದೇನೆ. ಪಾವತಿ ಲಿಂಕ್ ವಾಟ್ಸಾಪ್ ಅಥವಾ SMS ಮೂಲಕ ಕಳುಹಿಸಲೆ?" if is_kn else "I understand Rajesh! I have upgraded your Order #RZP-8921 to Priority Express Dispatch (guaranteed delivery within 24 hours). Shall I send the 1-Tap payment link via WhatsApp or SMS?",
+                "intent": "DELIVERY_EXPEDITE",
+                "detected_language": "Kannada" if is_kn else "English",
+                "willingness_to_pay": True,
+                "confidence_score": 99,
+                "sentiment": "Delivery Concern Handled",
+                "payment_method": "Priority UPI Link",
+                "requested_date": "Immediate",
+                "recommended_action": "Upgraded shipment to 24-hour Priority Express Dispatch",
+                "quick_replies": ["Send SMS Copy", "Open WhatsApp Link", "Talk to Human Manager"]
             }
 
         # Step B: Human Escalation
