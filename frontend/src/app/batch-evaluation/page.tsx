@@ -58,12 +58,12 @@ export default function BatchEvaluationPage() {
               <Database className="mr-3 text-blue-600" size={30} />
               Recovery Performance & Audit Ledger
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Verified Production Benchmark
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-100 text-blue-800 border border-blue-300">
+              50-Scenario Benchmark Suite
             </span>
           </div>
           <p className="text-slate-500 text-sm">
-            Empirical benchmark metrics across 50 failed checkout scenarios across HDFC, SBI, ICICI, Axis, and Kotak.
+            Empirical benchmark evaluation across 50 synthetic checkout failure scenarios modeled on HDFC, SBI, ICICI, and Axis patterns.
           </p>
         </div>
 
