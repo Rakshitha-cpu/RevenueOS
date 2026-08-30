@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, AlertTriangle, TrendingUp, CreditCard, Clock, Activity, Cpu, CheckCircle } from 'lucide-react';
+import { User, AlertTriangle, TrendingUp, CreditCard, Clock, Activity, Cpu, CheckCircle, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CustomerProfile() {

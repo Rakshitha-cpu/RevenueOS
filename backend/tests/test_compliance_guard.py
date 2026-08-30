@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 import sys
 import os
 
@@ -58,12 +58,13 @@ class TestComplianceGuard(unittest.TestCase):
         """Verify standard legitimate interventions under policy threshold pass cleanly."""
         result = self.guard.evaluate_action(
             action="1_tap_upi",
-            amount=4650,
+            amount=2500,
             customer={"id": "cust_4"},
             policy_config={"high_value_threshold": 50000.0, "fraud_block_enabled": True},
             risk_profile={"risk_score": 15}
         )
         self.assertTrue(result["authorized"])
+        self.assertIn("APPROVED", result["reason"])
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

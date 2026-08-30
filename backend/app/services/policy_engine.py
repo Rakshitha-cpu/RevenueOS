@@ -52,7 +52,7 @@ class PolicyGuard:
         # Passed all deterministic checks!
         return {
             "authorized": True, 
-            "reason": "Action complies with all merchant policies and risk thresholds.", 
+            "reason": "APPROVED: Action complies with all merchant policies and risk thresholds.", 
             "requires_human": False
         }
 
