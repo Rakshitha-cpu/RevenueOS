@@ -117,133 +117,135 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     motivePromptText: 'എനിക്ക് റദ്ദാക്കണം.',
     motiveReplyText: 'മനസ്സിലായി. നിങ്ങൾ എന്തുകൊണ്ടാണ് റദ്ദാക്കാൻ ആഗ്രഹിക്കുന്നത്: വിലയെക്കുറിച്ചുള്ള ആശങ്കയാണോ, ഡെലിവറി വൈകലാണോ, അതോ മറ്റെന്തെങ്കിലും കാരണമാണോ?',
     priceHighReplyText: 'നിങ്ങൾ ഓർഡർ ഇപ്പോൾ പൂർത്തിയാക്കുകയാണെങ്കിൽ ഞാൻ നിങ്ങൾക്ക് ഉടൻ 5% സ്റ്റോർ ക്രെഡിറ്റ് ബോണസ് (₹232 അധികം) നൽകാം. മുന്നോട്ട് പോകാൻ ആഗ്രഹമുണ്ടോ അതോ റീഫണ്ട് പ്രോസസ് ചെയ്യണോ?',
-    quickReplies: ['അതെ, ഞാനാണ് സംസാരിക്കുന്നത്.', 'തെറ്റായ നമ്പർ', 'എന്തിനാണ് വിളിക്കുന്നത്?']
-  }
-];
-
-export default function VoiceRecovery() {
-  const [selectedLang, setSelectedLang] = useState<LanguageOption>(SUPPORTED_LANGUAGES[0]);
-  const [callState, setCallState] = useState<'IDLE' | 'LISTENING' | 'ANALYZING' | 'AI_SPEAKING'>('IDLE');
-  const [callDuration, setCallDuration] = useState(0);
-  const [currentSpokenText, setCurrentSpokenText] = useState("");
-  const [customText, setCustomText] = useState("");
-  const [ttsEnabled, setTtsEnabled] = useState(true);
-  const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
-  const [recognitionError, setRecognitionError] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState(false);
-
-  const [customerDossier, setCustomerDossier] = useState<CustomerVerificationState>({
-    customerName: "Rajesh Kumar",
-    phone: "+91 98450 XXXXX",
-    orderId: "RZP-8921",
-    item: "Apple AirPods Pro",
-    amount: 4650,
-    paymentRail: "HDFC Card (Timeout: E_504)",
-    isVerified: true,
-    cancelReason: null,
-    retentionOfferMade: false,
-    handoffToHuman: false
-  });
-
-  const [conversationHistory, setConversationHistory] = useState<MessageTurn[]>([
-    {
-      id: "msg-0",
-      role: "agent",
-      text: SUPPORTED_LANGUAGES[0].initialGreeting,
-      timestamp: "00:00",
-      lang: "English",
-      verificationBadge: "ORDER_VERIFIED",
-      quickReplies: ["Yes, speaking.", "Wrong Number", "Why are you calling?"]
-    }
-  ]);
-  
-  const [parsedIntent, setParsedIntent] = useState<any>({
-    intent: "ORDER_VERIFIED",
-    language: "English",
-    sentiment: "Attentive / Inquiring",
-    confidence: "Order Verified ✓",
-    willingness: "Pending Motive Inspection",
-    method: "HDFC Card / UPI Intent",
-    date: "Immediate",
-    action: "Inspecting order parameters & authenticating customer intention"
-  });
-
-  const recognitionRef = useRef<any>(null);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  const handleLanguageChange = (lang: LanguageOption) => {
-    setSelectedLang(lang);
+    quickReplies: ['അതെ, ഞാനാണ് സംസാരിക്കുന്നത്.', 'തെറ്റായ നമ്പർ', 'എന്തിനാണ് വിളിക്കുന്ന  const finishSpeakingAndAnalyze = () => {
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch(e){}
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
     }
-    setCallState('IDLE');
-    setCurrentSpokenText("");
-    setShowWhatsAppPopup(false);
-    setCallDuration(0);
 
-    setConversationHistory([
-      {
-        id: `msg-${Date.now()}`,
-        role: 'agent',
-        text: lang.initialGreeting,
-        timestamp: "00:00",
-        lang: lang.name,
-        verificationBadge: "ORDER_VERIFIED",
-        quickReplies: lang.quickReplies
-      }
-    ]);
-  };
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversationHistory, callState]);
-
-  const formatCallTime = (secs: number) => {
-    const mins = Math.floor(secs / 60);
-    const rem = secs % 60;
-    return `${mins.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`;
-  };
-
-  const speakAIResponse = (text: string, langCode: string, onFinish?: () => void) => {
-    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      if (onFinish) onFinish();
+    const textToProcess = currentSpokenText.trim();
+    if (!textToProcess || textToProcess.length < 2) {
+      setCurrentSpokenText("");
+      setCallState('IDLE');
       return;
     }
+
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: textToProcess,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
+    };
+
+    const updatedHistory = [...conversationHistory, customerMsg];
+    setConversationHistory(updatedHistory);
+    setCurrentSpokenText("");
     
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = langCode;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-
-    utterance.onend = () => {
-      setCallState('IDLE');
-      if (onFinish) onFinish();
-    };
-
-    utterance.onerror = () => {
-      setCallState('IDLE');
-      if (onFinish) onFinish();
-    };
-
-    setCallState('AI_SPEAKING');
-    window.speechSynthesis.speak(utterance);
+    processInspectTurn(textToProcess, updatedHistory);
   };
 
-  const startListening = () => {
-    setRecognitionError(null);
-    setCurrentSpokenText("");
+  const handleTurnSubmit = (textToSubmit: string) => {
+    if (!textToSubmit.trim() || callState !== 'IDLE') return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setRecognitionError("Speech recognition not supported in this browser. Please open in Google Chrome.");
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: textToSubmit,
+      timestamp: formatCallTime(callDuration),
+      lang: selectedLang.name
+    };
+
+    const updatedHistory = [...conversationHistory, customerMsg];
+    setConversationHistory(updatedHistory);
+    setCustomText("");
+
+    processInspectTurn(textToSubmit, updatedHistory);
+  };
+
+  const triggerTestScenario = (type: 'WRONG_NUMBER' | 'CANCEL_PROBE' | 'REFUND_T0' | 'HUMAN_ESCALATE') => {
+    if (callState !== 'IDLE') return;
+
+    let custText = "";
+    let aiText = "";
+    let chips: string[] = [];
+    let badge = "ORDER_VERIFIED";
+
+    if (type === 'WRONG_NUMBER') {
+      custText = selectedLang.code === 'kn-IN' ? "ತಪ್ಪು ಸಂಖ್ಯೆ, ನಾನು ರಾಜೇಶ್ ಅಲ್ಲ." : selectedLang.code === 'hi-IN' ? "गलत नंबर है, मैं राजेश नहीं हूँ।" : selectedLang.code === 'ta-IN' ? "தவறான எண், நான் ராஜேஷ் இல்லை." : "Wrong number, I am not Rajesh.";
+      aiText = selectedLang.code === 'kn-IN' ? "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DNC ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ." : selectedLang.code === 'hi-IN' ? "माफ़ कीजिए! आपका नंबर DND लिस्ट में जोड़ दिया गया है। आगे कोई कॉल नहीं आएगी।" : selectedLang.code === 'ta-IN' ? "மன்னிக்கவும்! உங்கள் எண் DND பட்டியலில் சேர்க்கப்பட்டது. இனி அழைப்புகள் வராது." : "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.";
+      chips = ['Done, Thank You'];
+      badge = "DND_POLICY_HALTED";
+    } else if (type === 'CANCEL_PROBE') {
+      custText = selectedLang.motivePromptText;
+      aiText = selectedLang.motiveReplyText;
+      chips = [
+        selectedLang.code === 'kn-IN' ? 'ಬೆಲೆ ತುಂಬಾ ಹೆಚ್ಚು' : selectedLang.code === 'hi-IN' ? 'Price बहुत high है' : selectedLang.code === 'ta-IN' ? 'விலை மிக அதிகம்' : 'Price is too high',
+        selectedLang.code === 'kn-IN' ? 'ಡೆಲಿವರಿ ತಡವಾಗಿದೆ' : selectedLang.code === 'hi-IN' ? 'Delivery में delay' : selectedLang.code === 'ta-IN' ? 'டெலிவரி தாமதம்' : 'Delivery delay',
+        selectedLang.code === 'kn-IN' ? 'ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ಜೊತೆ ಮಾತನಾಡಿ' : 'Talk to Human Manager'
+      ];
+      badge = "MOTIVE_INSPECTION";
+    } else if (type === 'REFUND_T0') {
+      custText = selectedLang.code === 'kn-IN' ? "ನನ್ನ ಖಾತೆಯಿಂದ ಹಣ ಕಟ್ ಆಗಿದೆ, ರಿಫಂಡ್ ಮಾಡಿ." : selectedLang.code === 'hi-IN' ? "पैसे कट गए हैं, तुरंत रिफंड चाहिए।" : selectedLang.code === 'ta-IN' ? "பணம் எடுக்கப்பட்டது, ரீஃபண்ட் செய்யுங்கள்." : "Money was deducted from my account, refund immediately.";
+      aiText = selectedLang.code === 'kn-IN' ? "ದೃಢೀಕೃತ ವರದಿ: NPCI UTR #904288192014 ಮೂಲಕ ₹4,650 ಹಣವನ್ನು 2.18 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗಿದೆ. ರಶೀದಿ ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿದೆ." : selectedLang.code === 'hi-IN' ? "सत्यापित: NPCI UTR #904288192014 के तहत ₹4,650 का रिफंड 2.18 सेकंड में जमा हो चुका है।" : selectedLang.code === 'ta-IN' ? "உறுதிப்படுத்தப்பட்டது: NPCI UTR #904288192014 மூலம் ₹4,650 ரீஃபண்ட் 2.18 வினாடிகளில் செலுத்தப்பட்டது." : "Audit Verified: NPCI UTR #904288192014 confirms ₹4,650 reversal executed via T+0 instant rail in 2.18s.";
+      chips = ['✓ View NPCI Certificate', 'Re-order Cart'];
+      badge = "T0_REFUND_EXECUTED";
+    } else if (type === 'HUMAN_ESCALATE') {
+      custText = selectedLang.code === 'kn-IN' ? "ನನಗೆ ಮ್ಯಾನೇಜರ್ ಜೊತೆ ಮಾತನಾಡಬೇಕು." : selectedLang.code === 'hi-IN' ? "मुझे सीनियर मैनेजर से बात करनी है।" : selectedLang.code === 'ta-IN' ? "எனக்கு மேனேஜரிடம் பேச வேண்டும்." : "Connect me to a senior human manager.";
+      aiText = selectedLang.code === 'kn-IN' ? "ಖಂಡಿತ. ನಿಮ್ಮ ಪೂರ್ಣ ಪರಿಶೀಲನಾ ವರದಿ (ಆರ್ಡರ್ #RZP-8921, ₹4,650) ಸಿದ್ಧಪಡಿಸಿ ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ವಿಕ್ರಮ್ ಅವರಿಗೆ ಲೈವ್ ಕಾಲ್ ವರ್ಗಾಯಿಸಲಾಗುತ್ತಿದೆ." : selectedLang.code === 'hi-IN' ? "जी बिल्कुल। आपका केस विवरण तैयार करके वरिष्ठ अधिकारी विक्रम जी को कॉल ट्रांसफर की जा रही है।" : selectedLang.code === 'ta-IN' ? "நிச்சயமாக. உங்கள் விவரங்களை தயார் செய்து மூத்த மேலாளர் விக்ரமுக்கு அழைப்பு மாற்றப்படுகிறது." : "Certainly. I am compiling your verified case (Order #RZP-8921, ₹4,650) and seamlessly transferring you to Senior Specialist Vikram right now.";
+      chips = ['✓ Connected with Vikram'];
+      badge = "TRANSFERRED_TO_VIKRAM";
+      setCustomerDossier(prev => ({ ...prev, handoffToHuman: true }));
+    }
+
+    const customerMsg: MessageTurn = {
+      id: `cust-${Date.now()}`,
+      role: 'customer',
+      text: custText,
+      timestamp: formatCallTime(callDuration + 2),
+      lang: selectedLang.name
+    };
+
+    const agentMsg: MessageTurn = {
+      id: `agent-${Date.now() + 1}`,
+      role: 'agent',
+      text: aiText,
+      timestamp: formatCallTime(callDuration + 5),
+      lang: selectedLang.name,
+      verificationBadge: badge,
+      quickReplies: chips
+    };
+
+    setConversationHistory(prev => [...prev, customerMsg, agentMsg]);
+    speakAIResponse(aiText, selectedLang.code);
+  };
+
+  const processInspectTurn = async (text: string, currentHistory: MessageTurn[]) => {
+    setCallState('ANALYZING');
+    
+    try {
+      let intentData: any = null;
+
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://revenueos-backend.onrender.com";
+        const response = await fetch(`${backendUrl}/api/v1/voice/intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            utterance: text, 
+            session_id: "session_9042",
+            history: currentHistory.map(h => ({ role: h.role, text: h.text }))
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          intentData = data.extracted_data;
+        }
+      } catch (e) {
+        console.warn("Backend offline, using local verification engine.");
+      } this browser. Please open in Google Chrome.");
       return;
     }
 
@@ -302,41 +304,70 @@ export default function VoiceRecovery() {
     };
 
     const updatedHistory = [...conversationHistory, customerMsg];
-    setConversationHistory(updatedHistory);
-    setCurrentSpokenText("");
+    setConversationHisto  const processInspectTurn = async (text: string, currentHistory: MessageTurn[]) => {
+    setCallState('ANALYZING');
     
-    processInspectTurn(textToProcess, updatedHistory);
-  };
+    try {
+      let intentData: any = null;
 
-  const handleTurnSubmit = (textToSubmit: string) => {
-    if (!textToSubmit.trim() || callState !== 'IDLE') return;
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://revenueos-backend.onrender.com";
+        const response = await fetch(`${backendUrl}/api/v1/voice/intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            utterance: text, 
+            session_id: "session_9042",
+            history: currentHistory.map(h => ({ role: h.role, text: h.text }))
+          })
+        });
 
-    const customerMsg: MessageTurn = {
-      id: `cust-${Date.now()}`,
-      role: 'customer',
-      text: textToSubmit,
-      timestamp: formatCallTime(callDuration),
-      lang: selectedLang.name
-    };
+        if (response.ok) {
+          const data = await response.json();
+          intentData = data.extracted_data;
+        }
+      } catch (e) {
+        console.warn("Backend offline, using local verification engine.");
+      }
 
-    const updatedHistory = [...conversationHistory, customerMsg];
-    setConversationHistory(updatedHistory);
-    setCustomText("");
+      // Exact Progressive Fallback Engine in Active Selected Language
+      if (!intentData || intentData.intent === "UNKNOWN" || !intentData.intent) {
+        const t = text.toLowerCase().trim();
 
-    processInspectTurn(textToSubmit, updatedHistory);
-  };
-
-  const triggerTestScenario = (type: 'WRONG_NUMBER' | 'CANCEL_PROBE' | 'REFUND_T0' | 'HUMAN_ESCALATE') => {
-    if (callState !== 'IDLE') return;
-
-    let custText = "";
-    let aiText = "";
-    let chips: string[] = [];
-    let badge = "ORDER_VERIFIED";
-
-    if (type === 'WRONG_NUMBER') {
-      custText = selectedLang.code === 'kn-IN' ? "ತಪ್ಪು ಸಂಖ್ಯೆ, ನಾನು ರಾಜೇಶ್ ಅಲ್ಲ." : selectedLang.code === 'hi-IN' ? "गलत नंबर है, मैं राजेश नहीं हूँ।" : selectedLang.code === 'ta-IN' ? "தவறான எண், நான் ராஜேஷ் இல்லை." : "Wrong number, I am not Rajesh.";
-      aiText = selectedLang.code === 'kn-IN' ? "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DNC ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ." : selectedLang.code === 'hi-IN' ? "माफ़ कीजिए! आपका नंबर DND लिस्ट में जोड़ दिया गया है। आगे कोई कॉल नहीं आएगी।" : selectedLang.code === 'ta-IN' ? "மன்னிக்கவும்! உங்கள் எண் DND பட்டியலில் சேர்க்கப்பட்டது. இனி அழைப்புகள் வராது." : "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.";
+        // 0. Greetings & Identity (e.g. "hello", "hi", "hey")
+        if (/^(hello|hi|hey|namaste|namaskara|vanakkam|నమస్కారం)$/i.test(t) || /\b(hello|hi rajesh|who is this)\b/i.test(t)) {
+          intentData = {
+            intent: "GREETING",
+            sentiment: "Attentive / Inquiring",
+            confidence_score: 98,
+            willingness_to_pay: true,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ನಮಸ್ಕಾರ ರಾಜೇಶ್! ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) HDFC ಬ್ಯಾಂಕ್ ಟೈಮ್ಔಟ್ ಕಾರಣ ವಿಫಲವಾಗಿದೆ. ನೀವು ಪಾವತಿ ಪೂರ್ಣಗೊಳಿಸಲು ಬಯಸುತ್ತೀರಾ?"
+              : selectedLang.code === 'hi-IN'
+                ? "नमस्ते राजेश जी! आपका आर्डर #RZP-8921 HDFC बैंक टाइमआउट के कारण पेंडिंग है। क्या आप इसे पूरा करना चाहते हैं?"
+                : "Hello Rajesh! I am calling regarding your pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650) which faced an HDFC bank gateway timeout. Would you like to complete this order or do you need assistance?",
+            recommended_action: "State pending order status and offer payment resolution",
+            quick_replies: ['Yes, Complete Order', 'Send SMS Copy', 'I want to cancel', 'Talk to Human']
+          };
+        }
+        // 1. Wrong Number / DND
+        else if (/\b(wrong number|not rajesh|ತಪ್ಪು ಸಂಖ್ಯೆ|गलत नंबर|தவறான எண்)\b/i.test(t)) {
+          intentData = {
+            intent: "DND_STOPPING_RULE",
+            sentiment: "Identity Refusal (DND)",
+            confidence_score: 99,
+            willingness_to_pay: false,
+            ai_spoken_reply: selectedLang.code === 'kn-IN'
+              ? "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DNC ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ."
+              : selectedLang.code === 'hi-IN'
+                ? "माफ़ कीजिए! आपका नंबर DND लिस्ट में जोड़ दिया गया है। आगे कोई कॉल नहीं आएगी।"
+                : selectedLang.code === 'ta-IN'
+                  ? "மன்னிக்கவும்! உங்கள் எண் DND பட்டியலில் சேர்க்கப்பட்டது. இனி அழைப்புகள் வராது."
+                  : "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.",
+            recommended_action: "DPDP / DNC Rule Triggered: Suppressed further retries",
+            quick_replies: ['Done, Thank You']
+          };
+        }்புகள் வராது." : "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.";
       chips = ['Done, Thank You'];
       badge = "DND_POLICY_HALTED";
     } else if (type === 'CANCEL_PROBE') {
