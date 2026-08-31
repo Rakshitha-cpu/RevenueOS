@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw, Database } from 'lucide-react';
+import { LayoutDashboard, Users, Zap, Mic, Terminal, Shield, RotateCcw, Database, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import ChatWidget from '@/components/ChatWidget';
 
@@ -32,6 +32,10 @@ export default function RootLayout({
           
           <nav className="flex-1 px-4 py-6 space-y-1.5">
             <p className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Orchestration</p>
+            <Link href="/demo" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 transition text-orange-300 hover:text-orange-200 group mb-3">
+              <ShoppingCart size={18} className="group-hover:text-orange-300 transition-colors" /> <span className="font-bold">▶ Live Demo</span>
+              <span className="ml-auto text-[10px] bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">NEW</span>
+            </Link>
             <Link href="/war-room" className="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white group">
               <LayoutDashboard size={18} className="group-hover:text-blue-400 transition-colors" /> <span className="font-medium">War Room</span>
             </Link>
