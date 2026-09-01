@@ -13,18 +13,23 @@ from app.services.policy_guard import PolicyGuard
 from app.services.security_guard import SecurityGuard
 from app.services.voice_agent import VoiceAgent
 from app.services.risk_engine import analyze_transaction_risk
+from app.services.audit import audit_logger
+from app.services.telephony_gateway import telephony_gateway
+from app.api.merchants import MERCHANT_DB
 
 class TestRevenueOSEndToEndSuite(unittest.TestCase):
     """
     Comprehensive End-to-End Test Suite for RevenueOS.
     Verifies PolicyGuard 12-rule safety firewall, TRAI DND boundary conditions,
-    ZoneInfo IST timezone calculations, dynamic risk scoring, and DPDP compliance.
+    ZoneInfo IST timezone calculations, dynamic risk scoring, DPDP compliance,
+    SHA-256 cryptographic audit ledger verification, and Telephony PSTN gateway.
     """
 
     def setUp(self):
         self.guard = PolicyGuard()
         self.security = SecurityGuard(webhook_secret="rzp_test_secret_key")
         self.voice = VoiceAgent()
+        self.telephony = telephony_gateway
 
     # ---------------- 1. PolicyGuard Direct Unit Tests ----------------
     def test_01_trai_dnd_bypassed_in_demo_mode(self):
@@ -155,6 +160,62 @@ class TestRevenueOSEndToEndSuite(unittest.TestCase):
         
         valid = self.security.verify_webhook_signature(payload, signature)
         self.assertTrue(valid)
+
+    # ---------------- 5. Cryptographic SHA-256 Audit Ledger Verification ----------------
+    def test_12_cryptographic_audit_chain_integrity(self):
+        """Test: Mathematical SHA-256 Merkle chain verification across all ledger blocks."""
+        audit_logger.log_event(
+            entity_type="TEST_TRANSACTION",
+            entity_id="TX_VERIFY_901",
+            event_type="STATE_MUTATION",
+            actor="PolicyGuard",
+            description="Policy check executed for automated UPI dispatch"
+        )
+        verification = audit_logger.verify_chain_integrity()
+        self.assertTrue(verification["verified"])
+        self.assertEqual(verification["chain_status"], "INTACT")
+        self.assertEqual(verification["tampered_blocks_count"], 0)
+
+    # ---------------- 6. Telephony Outbound PSTN Gateway Tests ----------------
+    def test_13_telephony_dispatch_success_in_working_hours(self):
+        """Test: Telephony gateway successfully dispatches outbound call with valid TwiML."""
+        res = self.telephony.dispatch_outbound_call(
+            phone_number="+919845012345",
+            customer_name="Rajesh Kumar",
+            order_id="RZP-8921",
+            sku="Apple AirPods Pro",
+            amount=4650.0,
+            demo_mode=True,
+            simulated_ist_hour=14
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["status"], "INITIATED")
+        self.assertIn("Response", res["twiml_payload"])
+        self.assertIn("Gather", res["twiml_payload"])
+
+    def test_14_telephony_blocked_by_dnd_outside_window(self):
+        """Test: Telephony gateway strictly blocks outbound calls at 23:00 IST in production."""
+        res = self.telephony.dispatch_outbound_call(
+            phone_number="+919845012345",
+            customer_name="Rajesh Kumar",
+            order_id="RZP-8921",
+            sku="Apple AirPods Pro",
+            amount=4650.0,
+            demo_mode=False,
+            simulated_ist_hour=23 # 11 PM IST
+        )
+        self.assertFalse(res["success"])
+        self.assertEqual(res["status"], "POLICY_BLOCKED")
+        self.assertTrue(any("RULE_1_TRAI_DND_VIOLATION" in v for v in res["policy_violations"]))
+
+    # ---------------- 7. Multi-Tenant Merchant Configuration Tests ----------------
+    def test_15_multitenant_merchant_policy_lookup(self):
+        """Test: Multi-tenant merchant policy retrieval and discount ceilings."""
+        merchant = MERCHANT_DB.get("merchant_default")
+        self.assertIsNotNone(merchant)
+        self.assertEqual(merchant["currency"], "INR")
+        self.assertEqual(merchant["max_discount_percent"], 5.0)
+        self.assertEqual(merchant["loyalty_code"], "SAVE232")
 
 if __name__ == '__main__':
     unittest.main()

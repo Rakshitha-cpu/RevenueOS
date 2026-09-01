@@ -1,8 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
+import json
+import asyncio
 from app.services.voice_agent import voice_agent, VoiceAgent
 from app.services.policy_guard import PolicyGuard
+from app.logger import app_logger
 
 router = APIRouter()
 
@@ -63,3 +66,84 @@ def voice_agent_turn(req: VoiceTurnRequest):
         simulated_ist_hour=req.simulated_ist_hour,
         failure_code=req.failure_code
     )
+
+@router.websocket("/ws/{session_id}")
+async def voice_streaming_websocket(websocket: WebSocket, session_id: str):
+    """
+    Real-Time Bidirectional WebSocket Voice Gateway.
+    Supports streaming transcript packets, sub-second latency, barge-in interruption signals,
+    and real-time PolicyGuard gatekeeping.
+    """
+    await websocket.accept()
+    app_logger.info(f"WebSocket Connected: Session {session_id}")
+    
+    session_history: List[Dict[str, Any]] = []
+    
+    try:
+        # Send initial handshake ACK
+        await websocket.send_json({
+            "event": "SESSION_INITIALIZED",
+            "session_id": session_id,
+            "status": "READY",
+            "policyguard_firewall": "ACTIVE",
+            "latency_sla_ms": 400
+        })
+
+        while True:
+            raw_data = await websocket.receive_text()
+            data = json.loads(raw_data)
+            event_type = data.get("event") or data.get("type", "USER_UTTERANCE")
+
+            # 1. Handle Barge-in / Interruption Event
+            if event_type == "BARGE_IN":
+                await websocket.send_json({
+                    "event": "AUDIO_STREAM_HALTED",
+                    "reason": "CUSTOMER_INTERRUPT_DETECTED",
+                    "status": "LISTENING"
+                })
+                continue
+
+            # 2. Process Voice Utterance / Transcript Packet
+            message = data.get("message") or data.get("text", "")
+            if not message:
+                continue
+
+            # Acknowledge receipt
+            await websocket.send_json({
+                "event": "PROCESSING_TURN",
+                "session_id": session_id
+            })
+
+            # Execute turn through VoiceAgent + PolicyGuard
+            turn_result = VoiceAgent.process_turn(
+                message=message,
+                language=data.get("language", "en-IN"),
+                customer_name=data.get("customer_name", "Rajesh Kumar"),
+                order_id=data.get("order_id", "RZP-8921"),
+                sku=data.get("sku", "Apple AirPods Pro"),
+                amount=float(data.get("amount", 4650.0)),
+                history=session_history,
+                demo_mode=data.get("demo_mode", True),
+                simulated_ist_hour=data.get("simulated_ist_hour"),
+                failure_code=data.get("failure_code", "E_504_GATEWAY_TIMEOUT")
+            )
+
+            # Update session history
+            session_history.append({"role": "user", "text": message})
+            session_history.append({"role": "agent", "text": turn_result.get("reply_text", "")})
+
+            # Emit streaming completion packet
+            await websocket.send_json({
+                "event": "AGENT_RESPONSE",
+                "session_id": session_id,
+                "data": turn_result
+            })
+
+    except WebSocketDisconnect:
+        app_logger.info(f"WebSocket Disconnected: Session {session_id}")
+    except Exception as e:
+        app_logger.error(f"WebSocket Session Error: {e}")
+        try:
+            await websocket.send_json({"event": "ERROR", "message": str(e)})
+        except:
+            pass
