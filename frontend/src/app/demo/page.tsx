@@ -374,22 +374,28 @@ export default function DemoPage() {
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {NEXT_MODULE_OPTIONS.map((opt, i) => (
-                  <Link key={i} href={opt.link}
-                    className={`bg-slate-800/50 border border-gray-800 ${opt.border} rounded-xl p-3.5 transition group flex items-start space-x-3`}>
-                    <div className="p-2 rounded-lg bg-slate-900 border border-gray-700/60 flex-shrink-0 mt-0.5">
-                      {opt.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-bold text-white group-hover:text-blue-300 transition truncate">{opt.title}</p>
-                        <span className="text-[9px] bg-slate-700 text-gray-300 px-1.5 py-0.5 rounded font-mono flex-shrink-0">{opt.badge}</span>
+                {NEXT_MODULE_OPTIONS.map((opt, i) => {
+                  const targetUrl = opt.link === '/voice'
+                    ? `/voice?product=${encodeURIComponent(product.name)}&price=${product.price}&orderId=RZP-8921&error=E_504_GATEWAY_TIMEOUT&category=${encodeURIComponent(product.category)}`
+                    : opt.link;
+
+                  return (
+                    <Link key={i} href={targetUrl}
+                      className={`bg-slate-800/50 border border-gray-800 ${opt.border} rounded-xl p-3.5 transition group flex items-start space-x-3`}>
+                      <div className="p-2 rounded-lg bg-slate-900 border border-gray-700/60 flex-shrink-0 mt-0.5">
+                        {opt.icon}
                       </div>
-                      <p className="text-[11px] text-gray-400 leading-snug line-clamp-2">{opt.desc}</p>
-                    </div>
-                    <ExternalLink size={12} className="text-gray-600 group-hover:text-blue-400 flex-shrink-0 mt-1" />
-                  </Link>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-bold text-white group-hover:text-blue-300 transition truncate">{opt.title}</p>
+                          <span className="text-[9px] bg-slate-700 text-gray-300 px-1.5 py-0.5 rounded font-mono flex-shrink-0">{opt.badge}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 leading-snug line-clamp-2">{opt.desc}</p>
+                      </div>
+                      <ExternalLink size={12} className="text-gray-600 group-hover:text-blue-400 flex-shrink-0 mt-1" />
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -422,7 +428,7 @@ export default function DemoPage() {
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-bold text-white">Step {rs.step}: {rs.title}</p>
                         {recoveryStep > idx && (
-                          <Link href={rs.appLink}
+                          <Link href={rs.appLink === '/voice' ? `/voice?product=${encodeURIComponent(product.name)}&price=${product.price}&orderId=RZP-8921&error=E_504_GATEWAY_TIMEOUT` : rs.appLink}
                             className="text-xs text-blue-400 hover:text-blue-300 flex items-center space-x-1 border border-blue-500/30 hover:border-blue-400/50 px-2 py-0.5 rounded-lg transition bg-blue-950/40">
                             <span>{rs.appLabel}</span><ExternalLink size={10} />
                           </Link>
