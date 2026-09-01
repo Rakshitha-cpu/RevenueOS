@@ -17,7 +17,7 @@ class SecurityGuard:
     """
 
     def __init__(self, webhook_secret: str = None):
-        self.webhook_secret = webhook_secret or os.getenv("RAZORPAY_WEBHOOK_SECRET", "rzp_sec_live_default_key")
+        self.webhook_secret = webhook_secret or os.environ.get("RAZORPAY_WEBHOOK_SECRET") or os.environ.get("WEBHOOK_SECRET", "rzp_sec_live_production_key")
         self._idempotency_store: Dict[str, Dict[str, Any]] = {}
         self.LINK_EXPIRY_SECONDS = 900  
 

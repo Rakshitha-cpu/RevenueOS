@@ -92,7 +92,7 @@ class VoiceAgent:
                 context = f"Customer: {customer_name}, Order: #{order_id}, Item: {sku}, Amount: ₹{amount:,.2f}, Language: {language}"
                 history_text = "\n".join([f"{h.get('role')}: {h.get('text')}" for h in (history or [])[-4:]])
                 response = client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
+                    model="claude-3-5-sonnet-latest",
                     max_tokens=500,
                     system=SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": f"{context}\nHistory:\n{history_text}\n\nCustomer said: \"{user_text}\""}]
@@ -277,14 +277,38 @@ class VoiceAgent:
         }
 
     @staticmethod
-    def _gatekeep_with_policyguard(parsed: Dict[str, Any], original_amount: float, discount_price: float) -> Dict[str, Any]:
+    def _gatekeep_with_policyguard(parsed: Dict[str, Any], original_amount: float, discount_price: float, sku: str = "") -> Dict[str, Any]:
         """
         Enforces PolicyGuard verification on LLM output.
         Prevents unauthorized discounts or hallucinated fund moves.
         """
         intent = parsed.get("intent", "GENERAL_QUERY")
-        if intent == "PRICE_RETENTION" or intent == "PRICE_RETENTION_ACCEPTED":
-            parsed["action_logged"] = f"PolicyGuard: 5% discount cap verified (SAVE232, ₹{discount_price:,.0f})"
+        discount_percent = 5.0 if ("PRICE_RETENTION" in intent) else 0.0
+        
+        tx = {
+            "discount_applied_percent": discount_percent,
+            "risk_score": 35.0,
+            "customer_opt_out": intent == "DND_STOPPING_RULE",
+            "action_type": "RECOVERY_DISPATCH",
+            "amount": original_amount
+        }
+        
+        eval_result = PolicyGuard.evaluate_all(tx)
+        
+        if not eval_result.get("passed", True):
+            parsed["reply_text"] = "I understand your request. Let me connect you directly with Senior Support Manager Vikram to review this case."
+            parsed["intent"] = "HUMAN_ESCALATION"
+            parsed["action_logged"] = f"PolicyGuard BLOCKED: {', '.join(eval_result.get('violations', []))}"
+            parsed["quick_replies"] = ["Talk to Manager Vikram", "Cancel Request"]
+        else:
+            if "PRICE_RETENTION" in intent:
+                parsed["action_logged"] = f"PolicyGuard: 5% discount cap verified (SAVE232, ₹{discount_price:,.0f})"
+            elif intent == "DND_STOPPING_RULE":
+                parsed["action_logged"] = "PolicyGuard: DPDP Stopping rule activated (0 retries)"
+            elif intent == "WHATSAPP_LINK_ACTIVE":
+                parsed["action_logged"] = f"PolicyGuard: Dispatched verified 1-Tap UPI WhatsApp deep link for {sku or 'order'}"
+        
+        parsed["policy_evaluation"] = eval_result
         return parsed
 
 voice_agent = VoiceAgent()

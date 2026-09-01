@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* Strict TypeScript & Production Build Configuration */
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
