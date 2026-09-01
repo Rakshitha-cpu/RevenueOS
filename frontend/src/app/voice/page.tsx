@@ -223,107 +223,123 @@ export default function VoiceRecovery() {
     let intent = 'GENERAL_QUERY';
     let sentiment = 'Attentive';
     let action = 'Assisting customer with pending order';
-    let chips = ['Send SMS Copy', 'Open WhatsApp Link', 'Talk to Manager'];
+    let chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
 
-    // ── CHIP BUTTON EXACT MATCHES (must be first, before regex) ──────────────
-    if (['send on whatsapp', 'open whatsapp link', 'send whatsapp link', 'send payment via whatsapp'].includes(t)) {
+    // ── 1. CANCELLATION CONFIRMATION / FINAL OPT-OUT ──────────────────────
+    if (['no reason, just cancel', 'still cancel order', 'ordered by mistake', 'confirm cancel', 'yes cancel', 'just cancel', 'cancel'].includes(t) || /\b(just cancel|confirm cancel|ordered by mistake|no reason)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
-        ? "ನಿಮ್ಮ WhatsApp ನಲ್ಲಿ ಅಧಿಕೃತ Razorpay 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲಾಗಿದೆ. ನೀವು Google Pay ಅಥವಾ PhonePe ಬಳಸಿ ₹4,650 ಪಾವತಿ ಮಾಡಬಹುದು."
+        ? "ಸರಿ ರಾಜೇಶ್ ಅವರೇ. ನಿಮ್ಮ ವಿನಂತಿಯಂತೆ ಆರ್ಡರ್ #RZP-8921 ಅನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ. ಯಾವುದೇ ಶುಲ್ಕ ವಿಧಿಸಲಾಗುವುದಿಲ್ಲ. ಧನ್ಯವಾದಗಳು."
         : selectedLang.code === 'hi-IN'
-          ? "आपके WhatsApp पर Razorpay का 1-Tap UPI लिंक भेज दिया गया है। Google Pay या PhonePe से ₹4,650 का भुगतान करें।"
-          : "Done! Your verified Razorpay 1-Tap UPI link has been sent to WhatsApp (+91 98450 XXXXX). Tap it to pay ₹4,650 via Google Pay, PhonePe, or Paytm — takes under 10 seconds!";
+          ? "ठीक है राजेश जी। आपके अनुरोध पर Order #RZP-8921 रद्द कर दिया गया है। कोई शुल्क नहीं लिया जाएगा। धन्यवाद।"
+          : "Understood, Rajesh. As requested, Order #RZP-8921 has been cancelled and your reservation released. No charges were incurred. Thank you!";
+      intent = 'ORDER_CANCELLED';
+      sentiment = 'Neutral';
+      action = 'Order #RZP-8921 cancelled upon customer confirmation';
+      chips = ['Done, Thank You', 'Re-order Product'];
+    }
+    // ── 2. INITIAL CANCELLATION REQUEST -> MOTIVE PROBE ───────────────────
+    else if (['i want to cancel', 'cancel order', 'cancel this order', 'don\'t want', 'dont want'].includes(t) || /\b(cancel order|want to cancel|don't want|dont want|stop order|रद्द|ಕ್ಯಾನ್ಸಲ್)\b/i.test(t)) {
+      reply = selectedLang.code === 'kn-IN'
+        ? "ಅರ್ಥಮಾಡಿಕೊಂಡೆ. ರದ್ದು ಮಾಡುವ ಮೊದಲು: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ, ವಿತರಣೆ ವಿಳಂಬವೇ, ಅಥವಾ ಬೇರೆ ಕಾರಣವೇ? ನಾನು ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
+        : selectedLang.code === 'hi-IN'
+          ? "समझ गया। रद्द करने से पहले — क्या कारण है: कीमत ज़्यादा है, डिलीवरी में देरी है, या कोई और बात? मैं समाधान दे सकता हूँ।"
+          : "I understand. Before processing cancellation — is it because of the price, delivery timing, or something else? I may be able to help resolve it.";
+      intent = 'CANCEL_INSPECTION';
+      sentiment = 'Objecting';
+      action = 'Cancellation motive probe initiated';
+      chips = ['Price is too high', 'Delivery delay', 'Ordered by mistake', 'No reason, just cancel'];
+    }
+    // ── 3. PRICE OBJECTION / 5% DISCOUNT (SAVE232) ────────────────────────
+    else if (['price is too high', 'too expensive', 'price objection', '✓ accept ₹4,418 offer', 'accept offer', 'give discount'].includes(t) || /\b(price|expensive|cost|discount|offer|ದುಬಾರಿ|महंगा|ज्यादा)\b/i.test(t)) {
+      if (t.includes('accept')) {
+        reply = selectedLang.code === 'hi-IN'
+          ? "शानदार! SAVE232 कोड से 5% छूट लागू हो गई। नई कुल रकम ₹4,418 है। WhatsApp पर 1-Tap UPI लिंक भेज दिया गया है!"
+          : "Great choice! Code SAVE232 applied — your new total is ₹4,418. Dispatched the updated 1-Tap payment link to WhatsApp!";
+        intent = 'PRICE_RETENTION_ACCEPTED';
+        action = 'PolicyGuard: Applied approved 5% loyalty code SAVE232 (₹4,418)';
+        setShowWhatsAppPopup(true);
+        chips = ['Paid via Google Pay', 'Paid via PhonePe', 'Paid via Paytm', 'Talk to Manager'];
+      } else {
+        reply = selectedLang.code === 'kn-IN'
+          ? "ನಿಮ್ಮ ಗ್ರಾಹಕ ನಿಷ್ಠೆಗಾಗಿ ನಾನು 5% ರಿಯಾಯಿತಿ (SAVE232) ಅನ್ವಯಿಸಿ ಒಟ್ಟು ಮೊತ್ತವನ್ನು ₹4,418 ಗೆ ಇಳಿಸಬಲ್ಲೆ. ಈ ಆಫರ್ ಸ್ವೀಕರಿಸಲು ಬಯಸುತ್ತೀರಾ?"
+          : selectedLang.code === 'hi-IN'
+            ? "मैं आपके लिए 5% loyalty discount (SAVE232) लागू करके कुल रकम ₹4,418 कर सकता हूँ। क्या आप इसे स्वीकार करेंगे?"
+            : "I can apply an authorized 5% loyalty discount (SAVE232), bringing your total to ₹4,418. Would you like to accept this offer?";
+        intent = 'PRICE_RETENTION';
+        action = 'PolicyGuard: Quoted authorized 5% loyalty discount SAVE232 (₹4,418)';
+        chips = ['✓ Accept ₹4,418 Offer', 'Send on WhatsApp', 'No reason, just cancel'];
+      }
+    }
+    // ── 4. DELIVERY DELAY -> PRIORITY EXPRESS UPGRADE ─────────────────────
+    else if (['delivery delay', 'late delivery', 'priority dispatch', 'taking too long'].includes(t) || /\b(delay|slow|delivery|late|parcel|taking too long|not arrived|when will i get|ತಡ|ವಿಳಂಬ|देरी)\b/i.test(t)) {
+      reply = selectedLang.code === 'kn-IN'
+        ? "ಅರ್ಥವಾಯಿತು! ನಿಮ್ಮ ಆರ್ಡರ್ ಅನ್ನು '24-Hour Priority Express Dispatch' ಗೆ ಉಚಿತವಾಗಿ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ್ದೇನೆ. ಪಾವತಿ ಲಿಂಕ್ WhatsApp ಮೂಲಕ ಕಳುಹಿಸಲೆ?"
+        : selectedLang.code === 'hi-IN'
+          ? "समझ गया! मैंने आपका आर्डर '24-Hour Priority Express' में बिना अतिरिक्त शुल्क अपग्रेड कर दिया है। क्या पेमेंट लिंक WhatsApp पर भेज दूँ?"
+          : "Understood! I have upgraded Order #RZP-8921 to 24-Hour Priority Express Dispatch at no extra cost. Shall I send the payment link via WhatsApp?";
+      intent = 'DELIVERY_EXPEDITE';
+      action = 'PolicyGuard: Upgraded shipping tier to Priority 24-Hour Express (cost=0)';
+      chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
+    }
+    // ── 5. WHATSAPP UPI PAYMENT DISPATCH ───────────────────────────────────
+    else if (['send on whatsapp', 'open whatsapp link', 'send whatsapp link', 'open whatsapp', 'whatsapp', 'gpay', 'phonepe', 'paytm', 'switch to upi'].includes(t) || /\b(whatsapp|upi|gpay|phonepe|paytm|ವಾಟ್ಸಾಪ್|ಯುಪಿಐ|व्हाट्सएप|यूपीआई)\b/i.test(t)) {
+      reply = selectedLang.code === 'kn-IN'
+        ? "ನಿಮ್ಮ WhatsApp (+91 98450 XXXXX) ಗೆ ಅಧಿಕೃತ Razorpay 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಕಳುಹಿಸಲಾಗಿದೆ. Google Pay ಅಥವಾ PhonePe ಬಳಸಿ 10 ಸೆಕೆಂಡ್‌ನಲ್ಲಿ ಪಾವತಿಸಬಹುದು."
+        : selectedLang.code === 'hi-IN'
+          ? "आपके WhatsApp (+91 98450 XXXXX) पर Razorpay का 1-Tap UPI लिंक भेज दिया गया है। Google Pay या PhonePe से तुरंत भुगतान करें।"
+          : "Done! Your verified Razorpay 1-Tap UPI link has been sent to WhatsApp (+91 98450 XXXXX). Tap it to pay ₹4,650 via Google Pay, PhonePe, or Paytm in under 10 seconds!";
       intent = 'WHATSAPP_LINK_ACTIVE';
-      action = 'WhatsApp UPI link dispatched to customer';
+      action = 'Dispatched verified Razorpay 1-Tap UPI WhatsApp deep links';
       setShowWhatsAppPopup(true);
       chips = ['Paid via Google Pay', 'Paid via PhonePe', 'Paid via Paytm', 'Talk to Manager'];
-    } else if (['send via sms', 'send sms copy', 'send sms', 'sms link'].includes(t)) {
+    }
+    // ── 6. SMS LINK DISPATCH ──────────────────────────────────────────────
+    else if (['send via sms', 'send sms copy', 'send sms', 'sms link', 'sms'].includes(t) || /\b(sms|text|message|text me|ಎಸ್ಎಂಎಸ್|एसएमएस)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
         ? "SMS ಕಳುಹಿಸಲಾಗಿದೆ! +91 98450 XXXXX ಗೆ 1-ಟ್ಯಾಪ್ ಪಾವತಿ ಲಿಂಕ್ ತಲುಪಿದೆ. ₹4,650 ಪಾವತಿ ಮಾಡಲು ಲಿಂಕ್ ಕ್ಲಿಕ್ ಮಾಡಿ."
         : selectedLang.code === 'hi-IN'
           ? "SMS भेज दिया गया! +91 98450 XXXXX पर 1-Tap लिंक पहुँच गया है। ₹4,650 का भुगतान करने के लिए लिंक पर क्लिक करें।"
           : "SMS sent! The 1-Tap payment link has been delivered to +91 98450 XXXXX. Click it to pay ₹4,650 in one tap using any UPI app.";
       intent = 'SMS_DISPATCHED';
-      action = 'SMS payment link dispatched to customer number';
+      action = 'Dispatched verified Razorpay 1-Tap SMS payment link';
       chips = ['Paid via Google Pay', 'Paid via PhonePe', 'Talk to Manager'];
-    } else if (['yes, speaking.', 'yes, speaking', 'yes speaking', 'yes, complete order', 'yes i am', 'confirm order', 'ಹೌದು, ನಾನೇ', 'हाँ, बोल रहा हूँ'].includes(t)) {
+    }
+    // ── 7. IDENTITY CONFIRMATION ("Yes, speaking") ────────────────────────
+    else if (['yes, speaking.', 'yes, speaking', 'yes speaking', 'yes, complete order', 'yes i am', 'confirm order', 'speaking', 'yes', 'ಹೌದು, ನಾನೇ', 'हाँ, बोल रहा हूँ'].includes(t) || /\b(yes|speaking|correct|right|ಹೌದು|ನಾನೇ|हाँ|बोल रहा)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
-        ? "ಧನ್ಯವಾದಗಳು ರಾಜೇಶ್! ನಿಮ್ಮ HDFC ಕಾರ್ಡ್ E_504 ಟೈಮ್ಔಟ್ ಕಾರಣ ವಿಫಲವಾಗಿದೆ. ₹4,650 ಕಡಿತಗೊಂಡಿಲ್ಲ. WhatsApp ಅಥವಾ SMS ಮೂಲಕ 1-ಟ್ಯಾಪ್ UPI ಲಿಂಕ್ ಕಳುಹಿಸಲೆ?"
+        ? "ಧನ್ಯವಾದಗಳು ರಾಜೇಶ್! ನಿಮ್ಮ HDFC ಕಾರ್ಡ್ E_504 ಟೈಮ್ಔಟ್ ಕಾರಣ ವಿಫಲವಾಗಿದೆ. ಯಾವುದೇ ಹಣ ಕಡಿತಗೊಂಡಿಲ್ಲ. WhatsApp ಅಥವಾ SMS ಮೂಲಕ 1-ಟ್ಯಾಪ್ UPI ಲಿಂಕ್ ಕಳುಹಿಸಲೆ?"
         : selectedLang.code === 'hi-IN'
-          ? "धन्यवाद राजेश! आपका HDFC कार्ड E_504 टाइमआउट से फेल हुआ। ₹4,650 कट नहीं हुआ। WhatsApp या SMS पर 1-Tap UPI लिंक भेजूँ?"
-          : "Thank you Rajesh! Your HDFC card failed due to gateway timeout (E_504). No amount was deducted. Shall I send the 1-Tap UPI payment link via WhatsApp or SMS?";
+          ? "धन्यवाद राजेश! आपका HDFC कार्ड E_504 टाइमआउट से फेल हुआ था। कोई रकम नहीं कटी। WhatsApp या SMS पर 1-Tap UPI लिंक भेजूँ?"
+          : "Thank you Rajesh! Your HDFC card payment timed out at the bank gateway (E_504). No amount was debited. Shall I send the 1-Tap UPI payment link via WhatsApp or SMS?";
       intent = 'IDENTITY_CONFIRMED';
       sentiment = 'Cooperative';
-      action = 'Identity verified, payment link dispatch ready';
-      chips = ['Send on WhatsApp', 'Send via SMS', 'I want to cancel', 'Talk to Manager'];
-    } else if (['talk to manager', 'talk to human', 'connect to human', '✓ connected with manager', 'i need a human'].includes(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಖಂಡಿತ! ನಿಮ್ಮ ಆರ್ಡರ್ ವಿವರಗಳೊಂದಿಗೆ ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ವಿಕ್ರಮ್ ಅವರಿಗೆ ಕಾಲ್ ಟ್ರಾನ್ಸ್ಫರ್ ಮಾಡಲಾಗುತ್ತಿದೆ. 5 ಸೆಕೆಂಡ್ ತಡೆಯಿರಿ."
-        : selectedLang.code === 'hi-IN'
-          ? "बिल्कुल! आपका पूरा केस Senior Manager Vikram को transfer किया जा रहा है। 5 सेकंड रुकें।"
-          : "Certainly! Transferring your case to Senior Manager Vikram at Razorpay Support. He has your full order context. Please hold for 5 seconds.";
-      intent = 'HUMAN_ESCALATION';
-      action = 'Live call transferred to Senior Manager Vikram';
-      chips = ['✓ Connected with Manager', 'Cancel Transfer'];
-    } else if (['i want to cancel', 'cancel order', 'cancel this order', 'yes cancel', 'confirm cancel'].includes(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಅರ್ಥಮಾಡಿಕೊಂಡೆ. ರದ್ದು ಮಾಡುವ ಮೊದಲು: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ, ವಿತರಣೆ ವಿಳಂಬವೇ, ಅಥವಾ ಬೇರೆ ಕಾರಣವೇ?"
-        : selectedLang.code === 'hi-IN'
-          ? "समझ गया। रद्द करने से पहले — क्या कारण है: कीमत ज़्यादा है, देरी है, या कोई और बात?"
-          : "I understand. Before processing cancellation — is it because of the price, delivery timing, or something else? I may be able to help resolve it.";
-      intent = 'CANCEL_INSPECTION';
-      sentiment = 'Objecting';
-      action = 'Cancellation motive probe initiated';
-      chips = ['Price is too high', 'Delivery delay', 'Ordered by mistake', 'No reason, just cancel'];
-    } else if (['paid via google pay', 'paid via phonepe', 'paid via paytm', 'paid via phonepay', 'paid via upi', '✓ order complete', 'payment done'].includes(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಅದ್ಭುತ! ₹4,650 ಪಾವತಿ ದೃಢೀಕೃತವಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ಡಿಸ್ಪ್ಯಾಚ್‌ಗೆ ಅನುಮೋದಿಸಲಾಗಿದೆ. WhatsApp ನಲ್ಲಿ ರಶೀದಿ ಇದೆ. ಧನ್ಯವಾದಗಳು!"
-        : selectedLang.code === 'hi-IN'
-          ? "शानदार! ₹4,650 का भुगतान confirm हो गया। Order #RZP-8921 dispatch के लिए तैयार है। WhatsApp पर invoice भेज दी गई है!"
-          : "Excellent Rajesh! Payment of ₹4,650 confirmed. Order #RZP-8921 is approved for Priority Express Dispatch. Tax invoice sent to WhatsApp. Enjoy your product!";
-      intent = 'PAYMENT_CONFIRMED';
-      sentiment = 'Satisfied';
-      action = 'Payment confirmed, order dispatched, invoice generated';
-      chips = ['✓ Order Complete', 'Download Tax Invoice'];
-    } else if (['price is too high', 'too expensive', 'price objection', '✓ accept ₹4,418 offer'].includes(t)) {
-      reply = t.includes('accept')
-        ? (selectedLang.code === 'hi-IN' ? "शानदार! SAVE232 discount apply हो गया। नई कुल रकम: ₹4,418। WhatsApp पर UPI link भेज रहा हूँ।" : "Great choice! Code SAVE232 applied — your new total is ₹4,418. Sending the updated UPI link to WhatsApp now!")
-        : (selectedLang.code === 'hi-IN' ? "मैं आपके लिए 5% loyalty discount (SAVE232) apply करके ₹4,418 कर सकता हूँ। स्वीकार करेंगे?" : "I can apply an authorized 5% loyalty discount (SAVE232), bringing your total to ₹4,418. Would you like to accept this offer?");
-      intent = 'PRICE_RETENTION';
-      action = 'Applied 5% retention discount SAVE232';
-      chips = ['✓ Accept ₹4,418 Offer', 'Send on WhatsApp', 'Still Cancel Order'];
-    } else if (['delivery delay', 'late delivery', 'priority dispatch'].includes(t)) {
-      reply = selectedLang.code === 'hi-IN'
-        ? "समझ गया! मैंने आपका Order Priority Express में upgrade कर दिया — 24 घंटे में delivery। WhatsApp पर payment link भेजूँ?"
-        : "Understood! I have upgraded Order #RZP-8921 to 24-Hour Priority Express Dispatch at no extra cost. Shall I send the payment link via WhatsApp?";
-      intent = 'DELIVERY_EXPEDITE';
-      action = 'Upgraded to Priority Express Dispatch';
-      chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
-    }
-    // ── END CHIP EXACT MATCHES ────────────────────────────────────────────────
-    else
-
-    // 1. GREETING & IDENTITY INQUIRY
-    if (/^(hello|hi|hey|namaste|namaskara|vanakkam|who is this|why are you calling|who are you|ಯಾರು ನೀವು|ಯಾಕೆ ಕರೆ ಮಾಡಿದ್ದೀರಿ|आप कौन हैं|कॉल क्यों किया)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ನಮಸ್ಕಾರ ರಾಜೇಶ್! ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) HDFC ಬ್ಯಾಂಕ್ ಟೈಮ್ಔಟ್ ಕಾರಣ ಪೆಂಡಿಂಗ್ ಇದೆ. ನೀವು ಇದನ್ನು 1-ಟ್ಯಾಪ್ UPI ಮೂಲಕ ಪೂರ್ಣಗೊಳಿಸಲು ಬಯಸುತ್ತೀರಾ?"
-        : selectedLang.code === 'hi-IN'
-          ? "नमस्ते राजेश जी! मैं Razorpay Assistant बोल रहा हूँ। आपका आर्डर #RZP-8921 HDFC बैंक टाइमआउट के कारण पेंडिंग है। क्या आप इसे पूरा करना चाहते हैं?"
-          : "Hello Rajesh! I am calling from Razorpay Support regarding your pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650) which faced an HDFC bank timeout. Would you like to complete this order via 1-Tap UPI?";
-      intent = 'GREETING_AND_CONTEXT';
-      chips = ['Yes, Complete Order', 'Send SMS Copy', 'I want to cancel', 'Talk to Human'];
-    }
-    // 2. IDENTITY CONFIRMED ("Yes, speaking")
-    else if (/(yes|speaking|yes speaking|correct|right|ಹೌದು|ನಾನೇ|हाँ|बोल रहा)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ HDFC ಕಾರ್ಡ್ ವಹಿವಾಟು ಟೈಮ್ಔಟ್ (E_504) ಕಾರಣ ವಿಫಲವಾಗಿದೆ. ಪಾವತಿ ಲಿಂಕ್ WhatsApp ಅಥವಾ SMS ಮೂಲಕ ಕಳುಹಿಸಲೆ?"
-        : selectedLang.code === 'hi-IN'
-          ? "धन्यवाद। आपका HDFC कार्ड पेमेंट टाइमआउट के कारण रुक गया था। क्या मैं पेमेंट लिंक WhatsApp या SMS पर भेज दूँ?"
-          : "Thank you. I see your HDFC card payment timed out (E_504). Would you prefer completing this via 1-Tap WhatsApp UPI or SMS link?";
-      intent = 'IDENTITY_CONFIRMED';
+      action = 'Identity verified, payment recovery link ready';
       chips = ['Send on WhatsApp', 'Send via SMS', 'I want to cancel', 'Check Refund'];
     }
-    // 3. WRONG NUMBER / DND
-    else if (/(wrong number|not rajesh|stop calling|remove my number|don't call|ತಪ್ಪು ಸಂಖ್ಯೆ|गलत नंबर|தவறான எண்)/i.test(t)) {
+    // ── 8. DOUBLE-DEBIT / REFUND STATUS CHECK ─────────────────────────────
+    else if (['check refund', 'refund check', 'refund', 'money was deducted', 'double debit'].includes(t) || /\b(refund|deducted|money cut|cut money|double debit|ರಿಫಂಡ್|ರದ್ದು|रिफंड)\b/i.test(t)) {
+      reply = selectedLang.code === 'kn-IN'
+        ? "ದೃಢೀಕೃತ ವರದಿ: NPCI UTR #904288192014 ಮೂಲಕ ₹4,650 ಮೊತ್ತವನ್ನು T+0 ಇನ್‌ಸ್ಟಂಟ್ ರಿವರ್ಸಲ್‌ನಲ್ಲಿ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ. ರಶೀದಿ WhatsApp ನಲ್ಲಿದೆ."
+        : selectedLang.code === 'hi-IN'
+          ? "सत्यापित रिपोर्ट: NPCI UTR #904288192014 के तहत ₹4,650 का T+0 instant refund प्रोसेस कर दिया गया है।"
+          : "Audit Verified: NPCI UTR #904288192014 confirms ₹4,650 reversal executed via T+0 instant rail in 2.18s. Tax receipt sent to WhatsApp.";
+      intent = 'T0_REFUND_EXECUTED';
+      action = 'Reconciliation Engine: Verified T+0 reversal UTR #904288192014';
+      chips = ['✓ View NPCI Receipt', 'Re-order Product', 'Talk to Manager'];
+    }
+    // ── 9. HUMAN ESCALATION ───────────────────────────────────────────────
+    else if (['talk to manager', 'talk to human', 'connect to human', '✓ connected with manager', 'i need a human', 'manager transfer'].includes(t) || /\b(human|manager|senior|officer|supervisor|real person|customer care|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी)\b/i.test(t)) {
+      reply = selectedLang.code === 'kn-IN'
+        ? "ಖಂಡಿತ! ನಿಮ್ಮ ಆರ್ಡರ್ ವಿವರಗಳೊಂದಿಗೆ ಹಿರಿಯ ಮ್ಯಾನೇಜರ್ ವಿಕ್ರಮ್ ಅವರಿಗೆ ಲೈವ್ ಕಾಲ್ ವರ್ಗಾಯಿಸಲಾಗುತ್ತಿದೆ. 5 ಸೆಕೆಂಡುಗಳು ಹೋಲ್ಡ್‌ನಲ್ಲಿರಿ."
+        : selectedLang.code === 'hi-IN'
+          ? "बिल्कुल! आपका पूरा केस Senior Manager Vikram को transfer किया जा रहा है। 5 सेकंड होल्ड करें।"
+          : "Certainly! Transferring your call and order context directly to Senior Support Manager Vikram. Please hold for 5 seconds.";
+      intent = 'HUMAN_ESCALATION';
+      action = 'Live call transferred to Senior Support Desk (Manager Vikram)';
+      chips = ['✓ Connected with Manager', 'Cancel Transfer'];
+    }
+    // ── 10. WRONG NUMBER / DND STOPPING RULE ──────────────────────────────
+    else if (['wrong number', 'not rajesh', 'stop calling', 'don\'t call me', 'dnd', 'remove my number'].includes(t) || /\b(wrong number|not rajesh|stop calling|remove my number|don't call|ತಪ್ಪು ಸಂಖ್ಯೆ|गलत नंबर|தவறான எண்)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
         ? "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DND ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ."
         : selectedLang.code === 'hi-IN'
@@ -331,96 +347,32 @@ export default function VoiceRecovery() {
           : "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately.";
       intent = 'DND_STOPPING_RULE';
       sentiment = 'Identity Refusal (DND)';
-      action = 'DPDP / DNC Rule Triggered: Suppressed further retries';
+      action = 'DPDP / DNC Rule Triggered: Suppressed further retries (0 retries)';
       chips = ['Done, Thank You'];
     }
-    // 4. HUMAN ESCALATION
-    else if (/(human|manager|senior|officer|supervisor|real person|customer care|ವಿಕ್ರಮ್|ಮ್ಯಾನೇಜರ್|इंसान|अधिकारी)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಖಂಡಿತ ರಾಜೇಶ್ ಅವರೇ. ನಿಮ್ಮ ಆರ್ಡರ್ ವಿವರಗಳೊಂದಿಗೆ ಹಿರಿಯ ಸಪೋರ್ಟ್ ಮ್ಯಾನೇಜರ್ ಅವರಿಗೆ ಲೈವ್ ಕಾಲ್ ವರ್ಗಾಯಿಸಲಾಗುತ್ತಿದೆ. ದಯವಿಟ್ಟು 5 ಸೆಕೆಂಡುಗಳು ಹೋಲ್ಡ್‌ನಲ್ಲಿರಿ."
-        : selectedLang.code === 'hi-IN'
-          ? "जी बिल्कुल राजेश जी। आपका पूरा केस विवरण तैयार करके वरिष्ठ अधिकारी को कॉल ट्रांसफर की जा रही है।"
-          : "Certainly Rajesh. I am transferring your case directly to Senior Manager Vikram at the Razorpay Support Desk. Please hold for 5 seconds.";
-      intent = 'HUMAN_ESCALATION';
-      action = 'Live human call handoff executed to Senior Desk';
-      chips = ['✓ Connected with Manager', 'Cancel Transfer'];
-    }
-    // 5. CANCELLATION REQUEST -> MOTIVE PROBING
-    else if (/(cancel|dont want|don't want|stop|not interested|cancel order|ಕ್ಯಾನ್ಸಲ್|ರದ್ದು|ಬೇಡ|रद्द)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ಅರ್ಥಮಾಡಿಕೊಂಡೆ. ಆರ್ಡರ್ ರದ್ದುಗೊಳಿಸುವ ಮುನ್ನ ತಿಳಿಸಬಹುದೇ: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ ಅಥವಾ ವಿತರಣೆ ವಿಳಂಬವೇ?"
-        : selectedLang.code === 'hi-IN'
-          ? "समझ गया। क्या मैं जान सकता हूँ कि क्या कारण है: कीमत ज़्यादा है या डिलीवरी में देरी?"
-          : "I understand. Before I process cancellation for Order #RZP-8921, may I ask the reason: is it delivery delay, price concerns, or something else?";
-      intent = 'CANCEL_INSPECTION';
-      chips = ['Price is too high', 'Delivery delay', 'Ordered by mistake', 'Confirm Cancel'];
-    }
-    // 6. DELIVERY DELAY OBJECTION
-    else if (/(delay|slow|delivery|late|parcel|taking too long|not arrived|when will i get|ತಡ|ವಿಳಂಬ|देरी)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡೆ! ನಾನು ನಿಮ್ಮ ಆರ್ಡರ್ ಅನ್ನು 24 ಗಂಟೆಗಳಲ್ಲಿ ತಲುಪಿಸಲು 'ಪ್ರಯಾರಿಟಿ ಎಕ್ಸ್‌ಪ್ರೆಸ್ ಡಿಸ್ಪ್ಯಾಚ್' ಗೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ್ದೇನೆ. ಪಾವತಿ ಲಿಂಕ್ WhatsApp ಮೂಲಕ ಕಳುಹಿಸಲೆ?"
-        : selectedLang.code === 'hi-IN'
-          ? "मैं समझ गया! मैंने आपका आर्डर 24 घंटे में डिलीवरी के लिए 'Priority Express' में अपग्रेड कर दिया है। क्या पेमेंट लिंक WhatsApp पर भेज दूँ?"
-          : "I understand! I have upgraded your Order #RZP-8921 to 24-Hour Priority Express Dispatch. Shall I send the 1-Tap payment link via WhatsApp?";
-      intent = 'DELIVERY_EXPEDITE';
-      action = 'Upgraded shipment to 24-hour Priority Express Dispatch';
-      chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
-    }
-    // 7. PRICE OBJECTION / DISCOUNT
-    else if (/(price|expensive|high|discount|offer|cheap|cost|ದುಬಾರಿ|ಹೆಚ್ಚು|महंगा|ज्यादा)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ನಿಮ್ಮ ಗ್ರಾಹಕ ನಿಷ್ಠೆಗಾಗಿ ನಾನು ತಕ್ಷಣ 5% ರಿಯಾಯಿತಿ (SAVE232) ಅನ್ವಯಿಸಿ ಒಟ್ಟು ಮೊತ್ತವನ್ನು ₹4,418 ಗೆ ಇಳಿಸಬಲ್ಲೆ. ಈ ಆಫರ್ ಸ್ವೀಕರಿಸಲು ಬಯಸುತ್ತೀರಾ?"
-        : selectedLang.code === 'hi-IN'
-          ? "मैं आपके लिए instant 5% retention discount (SAVE232) अप्लाई करके कुल रकम ₹4,418 कर सकता हूँ। क्या आप इसे स्वीकार करेंगे?"
-          : "I can apply an authorized 5% loyalty discount (SAVE232), bringing your total to ₹4,418. Would you like to accept this offer?";
-      intent = 'PRICE_RETENTION';
-      action = 'Applied dynamic 5% retention incentive';
-      chips = ['✓ Accept ₹4,418 Offer', 'Still Cancel Order', 'Talk to Manager'];
-    }
-    // 8. SEND SMS REQUEST
-    else if (/(sms|text|message|send sms|text me|ಎಸ್ಎಂಎಸ್|एसएमएस)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ದೃಢೀಕೃತ: ನಿಮ್ಮ ಮೊಬೈಲ್ +91 98450 XXXXX ಗೆ 1-ಟ್ಯಾಪ್ SMS ಲಿಂಕ್ ಕಳುಹಿಸಲಾಗಿದೆ. ನೀವು Google Pay ಅಥವಾ PhonePe ಮೂಲಕ ಪಾವತಿಸಬಹುದೇ?"
-        : selectedLang.code === 'hi-IN'
-          ? "सत्यापित: आपके नंबर +91 98450 XXXXX पर 1-Tap SMS लिंक भेज दिया गया है। क्या आप Google Pay या PhonePe से पूरा करेंगे?"
-          : "Verified: The 1-Tap SMS payment link has been dispatched to +91 98450 XXXXX. Would you prefer paying via Google Pay or PhonePe?";
-      intent = 'SMS_DISPATCHED';
-      chips = ['Paid via Google Pay', 'Paid via PhonePe', 'Talk to Manager'];
-    }
-    // 9. WHATSAPP / UPI REQUEST
-    else if (/(whatsapp|upi|gpay|phonepe|paytm|link|send link|ವಾಟ್ಸಾಪ್|ಯುಪಿಐ|व्हाट्सएप|यूपीआई)/i.test(t)) {
-      reply = selectedLang.code === 'kn-IN'
-        ? "ನಿಮ್ಮ WhatsApp ನಲ್ಲಿ ಅಧಿಕೃತ Razorpay 1-ಟ್ಯಾಪ್ ಯುಪಿಐ ಲಿಂಕ್ ಸಕ್ರಿಯವಾಗಿದೆ. ನೀವು Google Pay ಅಥವಾ PhonePe ಬಳಸಲು ಬಯಸುತ್ತೀರಾ?"
-        : selectedLang.code === 'hi-IN'
-          ? "आपके WhatsApp पर Razorpay 1-Tap UPI लिंक भेज दिया गया है। आप Google Pay या PhonePe से भुगतान कर सकते हैं।"
-          : "Your verified 1-Tap UPI link is now active in WhatsApp. Would you like to complete payment using Google Pay, PhonePe, or Paytm?";
-      intent = 'WHATSAPP_LINK_ACTIVE';
-      setShowWhatsAppPopup(true);
-      chips = ['Paid via Google Pay', 'Paid via PhonePe', 'Talk to Manager'];
-    }
-    // 10. PAYMENT COMPLETED / ALREADY PAID
-    else if (/(paid|done|completed|already paid|i paid|sent money|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|भुगतान किया|செலுத்தப்பட்டது)/i.test(t)) {
+    // ── 11. PAYMENT COMPLETED CONFIRMATION ────────────────────────────────
+    else if (['paid via google pay', 'paid via phonepe', 'paid via paytm', 'paid via upi', '✓ order complete', 'payment done', 'already paid', 'i paid'].includes(t) || /\b(paid|done|completed|already paid|i paid|sent money|ಪಾವತಿಸಿದೆ|ಮಾಡಿದೆ|भुगतान किया|செலுத்தப்பட்டது)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
         ? "ಅದ್ಭುತ ರಾಜೇಶ್ ಅವರೇ! ನಿಮ್ಮ ₹4,650 ಪಾವತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ರವಾನೆಗೆ ಅನುಮೋದಿಸಲಾಗಿದೆ. ರಶೀದಿ WhatsApp ನಲ್ಲಿದೆ. ಧನ್ಯವಾದಗಳು!"
         : selectedLang.code === 'hi-IN'
           ? "शानदार राजेश जी! आपका ₹4,650 का भुगतान सत्यापित हो गया है। आर्डर #RZP-8921 डिस्पेच के लिए तैयार है। रसीद WhatsApp पर भेज दी गई है।"
-          : "Awesome Rajesh! Your payment of ₹4,650 is confirmed. Order #RZP-8921 is approved for priority warehouse dispatch. Tax invoice generated on WhatsApp. Thank you!";
+          : "Awesome Rajesh! Your payment of ₹4,650 is confirmed. Order #RZP-8921 is approved for Priority Express Dispatch. Tax invoice generated on WhatsApp. Thank you!";
       intent = 'PAYMENT_CONFIRMED';
-      action = 'Payment confirmed, invoice generated, and order dispatched';
+      sentiment = 'Satisfied';
+      action = 'Payment confirmed, order dispatched, invoice generated';
       chips = ['✓ Order Complete', 'Download Tax Invoice'];
     }
-    // 11. DOUBLE-DEBIT / REFUND STATUS CHECK
-    else if (/(refund|deducted|money cut|cut money|double debit|రిఫండ్|ರಿಫಂಡ್|रिफंड)/i.test(t)) {
+    // ── 12. GREETINGS & PURPOSE INQUIRY ───────────────────────────────────
+    else if (['who is this?', 'who is this', 'why are you calling?', 'why are you calling', 'hello', 'hi', 'hey', 'namaste'].includes(t) || /^(hello|hi|hey|namaste|namaskara|vanakkam|who is this|why are you calling|who are you|ಯಾರು ನೀವು|ಯಾಕೆ ಕರೆ ಮಾಡಿದ್ದೀರಿ|आप कौन हैं|कॉल क्यों किया)/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
-        ? "ದೃಢೀಕೃತ ವರದಿ: NPCI UTR #904288192014 ಮೂಲಕ ₹4,650 ಮೊತ್ತವನ್ನು 2.18 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರಿಫಂಡ್ ಮಾಡಲಾಗಿದೆ. ರಶೀದಿ WhatsApp ನಲ್ಲಿದೆ."
+        ? "ನಮಸ್ಕಾರ ರಾಜೇಶ್! ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) HDFC ಬ್ಯಾಂಕ್ ಟೈಮ್ಔಟ್ ಕಾರಣ ಪೆಂಡಿಂಗ್ ಇದೆ. ನೀವು ಇದನ್ನು 1-ಟ್ಯಾಪ್ UPI ಮೂಲಕ ಪೂರ್ಣಗೊಳಿಸಲು ಬಯಸುತ್ತೀರಾ?"
         : selectedLang.code === 'hi-IN'
-          ? "सत्यापित रिपोर्ट: NPCI UTR #904288192014 के तहत ₹4,650 का रिफंड 2.18 सेकंड में प्रोसेस कर दिया गया है।"
-          : "Audit Verified: NPCI UTR #904288192014 confirms ₹4,650 reversal executed via T+0 instant rail in 2.18s.";
-      intent = 'T0_REFUND_EXECUTED';
-      action = 'Audit confirmed instant refund status';
-      chips = ['✓ View NPCI Receipt', 'Re-order Product'];
+          ? "नमस्ते राजेश जी! मैं Razorpay Assistant बोल रहा हूँ। आपका आर्डर #RZP-8921 HDFC बैंक टाइमआउट के कारण पेंडिंग है। क्या आप इसे 1-Tap UPI से पूरा करना चाहते हैं?"
+          : "Hello Rajesh! I am calling from Razorpay Support regarding your pending Order #RZP-8921 (Apple AirPods Pro - ₹4,650) which timed out at the bank. Would you like to complete this order via 1-Tap UPI or check refund status?";
+      intent = 'GREETING_AND_CONTEXT';
+      chips = ['Yes, Complete Order', 'Send on WhatsApp', 'I want to cancel', 'Talk to Manager'];
     }
-    // DEFAULT INQUIRY
+    // ── DEFAULT FALLBACK ──────────────────────────────────────────────────
     else {
       reply = selectedLang.code === 'kn-IN'
         ? "ಖಂಡಿತ, ನಿಮ್ಮ ಆರ್ಡರ್ #RZP-8921 (Apple AirPods Pro - ₹4,650) ಸಂಬಂಧಿಸಿದಂತೆ ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
@@ -430,7 +382,6 @@ export default function VoiceRecovery() {
       intent = 'GENERAL_QUERY';
       chips = ['Send on WhatsApp', 'Send via SMS', 'I want to cancel', 'Talk to Manager'];
     }
-
     setParsedIntent({ intent, sentiment, action });
 
     const agentMsg: MessageTurn = {
