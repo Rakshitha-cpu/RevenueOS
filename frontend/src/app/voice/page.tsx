@@ -230,16 +230,22 @@ function VoiceRecoveryContent() {
     let action = `Assisting customer with ${productName} (₹${productPrice.toLocaleString()})`;
     let chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
 
-    // 1. Try calling the real FastAPI backend first
+    // 1. Try calling the real FastAPI backend turn endpoint
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2800);
-      const res = await fetch(`${API_BASE_URL}/api/v1/voice/intent`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/voice/turn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          utterance: text,
-          session_id: `call_${orderId}`,
+          message: text,
+          language: selectedLang.code,
+          customer_name: customerName,
+          order_id: orderId,
+          sku: productName,
+          amount: productPrice,
+          failure_code: failureReason,
+          demo_mode: true,
           history: currentHistory.map(h => ({ role: h.role, text: h.text }))
         }),
         signal: controller.signal
@@ -248,15 +254,14 @@ function VoiceRecoveryContent() {
 
       if (res.ok) {
         const data = await res.json();
-        const extracted = data.extracted_data;
-        if (extracted && extracted.ai_spoken_reply) {
-          reply = extracted.ai_spoken_reply;
-          intent = extracted.intent || 'VOICE_AGENT_RESOLVED';
-          action = extracted.policyguard_action || action;
-          if (extracted.quick_replies && extracted.quick_replies.length > 0) {
-            chips = extracted.quick_replies;
+        if (data && data.reply_text) {
+          reply = data.reply_text;
+          intent = data.intent || 'VOICE_AGENT_RESOLVED';
+          action = data.action_logged || action;
+          if (data.quick_replies && data.quick_replies.length > 0) {
+            chips = data.quick_replies;
           }
-          if (extracted.intent === 'WHATSAPP_LINK_ACTIVE' || extracted.intent === 'PRICE_RETENTION_ACCEPTED') {
+          if (data.trigger_whatsapp_link || data.intent === 'WHATSAPP_LINK_ACTIVE' || data.intent === 'PRICE_RETENTION_ACCEPTED') {
             setShowWhatsAppPopup(true);
           }
         }
