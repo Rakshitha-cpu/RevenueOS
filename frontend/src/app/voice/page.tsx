@@ -57,8 +57,15 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     code: 'te-IN', 
     name: 'Telugu', 
     nativeName: 'తెలుగు', 
-    initialGreeting: 'నమస్కారం రాజేష్! నేను మీ Razorpay Assistant మాట్లాడుతున్నాను. మీ ఆర్డర్ #RZP-8921 (₹4,650) గురించి కాల్ చేస్తున్నాను. నేను రాజేష్ కుమార్ తో మాట్లాడుతున్నానా?',
+    initialGreeting: 'నమస్కారం రాజేష్! నేను మీ Razorpay Assistant మాట్లాడుతున్నాను. మీ ఆర్ಡర్ #RZP-8921 (₹4,650) గురించి కాల్ చేస్తున్నాను. నేను రాజేష్ కుమార్ తో మాట్లాడుతున్నానా?',
     quickReplies: ['అవును, నేనే', 'ఎవరు మీరు?', 'తప్పు నంబర్', 'ఎందుకు కాల్ చేశారు?']
+  },
+  { 
+    code: 'ml-IN', 
+    name: 'Malayalam', 
+    nativeName: 'മലയാളം', 
+    initialGreeting: 'നമസ്കാരം രാജേഷ്! ഞാൻ നിങ്ങളുടെ Razorpay Assistant ആണ്. നിങ്ങളുടെ ഓർഡർ #RZP-8921 (₹4,650) സംബന്ധിച്ചാണ് ഈ കോൾ. ഞാൻ സംസാരിക്കുന്നത് രാജേഷ് കുമാറിനോടാണോ?',
+    quickReplies: ['അതെ, ഞാൻ തന്നെ', 'ആരാണ് സംസാരിക്കുന്നത്?', 'നമ്പർ തെറ്റാണ്', 'എന്തിനാണ് വിളിക്കുന്നത്?']
   }
 ];
 
@@ -267,7 +274,7 @@ export default function VoiceRecovery() {
       sentiment = 'Objecting';
       action = 'Cancellation motive probe initiated';
       chips = ['Price is too high', 'Delivery delay', 'Ordered by mistake', 'No reason, just cancel'];
-    } else if (['paid via google pay', 'paid via phonepay', 'paid via paytm', 'paid via phonepay', 'paid via upi', '✓ order complete', 'payment done'].includes(t)) {
+    } else if (['paid via google pay', 'paid via phonepe', 'paid via paytm', 'paid via phonepay', 'paid via upi', '✓ order complete', 'payment done'].includes(t)) {
       reply = selectedLang.code === 'kn-IN'
         ? "ಅದ್ಭುತ! ₹4,650 ಪಾವತಿ ದೃಢೀಕೃತವಾಗಿದೆ. ಆರ್ಡರ್ #RZP-8921 ಡಿಸ್ಪ್ಯಾಚ್‌ಗೆ ಅನುಮೋದಿಸಲಾಗಿದೆ. WhatsApp ನಲ್ಲಿ ರಶೀದಿ ಇದೆ. ಧನ್ಯವಾದಗಳು!"
         : selectedLang.code === 'hi-IN'

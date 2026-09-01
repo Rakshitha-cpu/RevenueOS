@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { AlertTriangle, TrendingUp, Shield, ArrowUpRight, Zap, Target, User, Phone, RefreshCw, Terminal, Clock } from 'lucide-react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { AlertTriangle, TrendingUp, Shield, ArrowUpRight, Zap, Target, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 const mockChartData = [

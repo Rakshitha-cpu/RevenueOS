@@ -6,6 +6,8 @@ import {
   ArrowRight, AlertCircle, Sparkles, Receipt, RefreshCw, Smartphone 
 } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://revenueos-backend.onrender.com";
+
 export default function InstantRefundsPage() {
   const [amount, setAmount] = useState<number>(4650);
   const [paymentId, setPaymentId] = useState<string>("pay_NX82910482");
@@ -22,11 +24,11 @@ export default function InstantRefundsPage() {
     setRefundResult(null);
     setActiveStep(1);
 
-    try {
-      setTimeout(() => setActiveStep(2), 600);
-      setTimeout(() => setActiveStep(3), 1300);
+    setTimeout(() => setActiveStep(2), 500);
+    setTimeout(() => setActiveStep(3), 1100);
 
-      const response = await fetch("http://127.0.0.1:8000/api/v1/refunds/instant", {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/refunds/instant`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -57,9 +59,9 @@ export default function InstantRefundsPage() {
         setActiveStep(4);
         setRefundResult(data);
         setIsProcessing(false);
-      }, 2100);
+      }, 1800);
 
-    } catch (e) {
+    } catch {
       setTimeout(() => {
         setActiveStep(4);
         setRefundResult({
@@ -72,7 +74,7 @@ export default function InstantRefundsPage() {
           status: "PROCESSED"
         });
         setIsProcessing(false);
-      }, 2100);
+      }, 1800);
     }
   };
 
@@ -82,7 +84,7 @@ export default function InstantRefundsPage() {
     setRefundResult(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/v1/refunds/store-credit-boost", {
+      const response = await fetch(`${API_BASE_URL}/api/v1/refunds/store-credit-boost`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -106,7 +108,7 @@ export default function InstantRefundsPage() {
           status: "READY_FOR_REDEMPTION"
         });
       }
-    } catch (e) {
+    } catch {
       const bonus = Math.round(amount * 0.05);
       setStoreCreditResult({
         original_amount: amount,

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Zap, ArrowRight, ShieldCheck, Phone, RefreshCw, BarChart3, Lock, 
   ChevronRight, Sparkles, CheckCircle2, Globe, Cpu, Smartphone, 
-  Mail, KeyRound, Shield, Check, Star, Play, Terminal, ArrowUpRight
+  Mail, Shield, Check, Star
 } from 'lucide-react';
 
 export default function LandingAndAuthPage() {
