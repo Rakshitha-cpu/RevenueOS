@@ -276,7 +276,7 @@ class VoiceAgent:
         
         # Determine demo_mode (defaults to False in real production unless explicit demo flag or env var is set)
         if demo_mode is None:
-            demo_mode = os.getenv("REVENUEOS_DEMO_MODE", "true").lower() in ("true", "1")
+            demo_mode = os.getenv("REVENUEOS_DEMO_MODE", "false").lower() in ("true", "1")
 
         # 1. Dynamically compute transaction risk using actual transaction, customer, and failure reason
         risk_profile = analyze_transaction_risk(
