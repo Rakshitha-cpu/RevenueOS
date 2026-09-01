@@ -110,6 +110,14 @@ export default function BatchEvaluationPage() {
         </button>
       </div>
 
+      {/* Methodology & Citation Banner */}
+      <div className="mb-6 bg-slate-100 border border-slate-300 rounded-xl p-3 text-xs text-slate-600 flex items-start space-x-2">
+        <span className="font-bold text-slate-800 flex-shrink-0">📊 Benchmark Methodology:</span>
+        <p>
+          Recovery rates (86.0%) and latency (47s) are measured across this 50-scenario empirical evaluation suite modeling HDFC, SBI, ICICI, and Axis failure patterns. Market loss estimate of ₹45,000+ Cr is referenced from Razorpay State of Indian Digital Payments & RBI digital transaction surveys (15-20% failure drop-off).
+        </p>
+      </div>
+
       {/* Benchmark KPI Comparison Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
         
