@@ -44,7 +44,14 @@ class VoiceAgent:
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
-    def extract_intent(self, user_utterance: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+    def extract_intent(
+        self,
+        user_utterance: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        demo_mode: Optional[bool] = None,
+        simulated_ist_hour: Optional[int] = None,
+        failure_code: str = "E_504_GATEWAY_TIMEOUT"
+    ) -> Dict[str, Any]:
         result = self.process_turn(
             message=user_utterance,
             language="en-IN",
@@ -52,7 +59,10 @@ class VoiceAgent:
             order_id="RZP-8921",
             sku="Apple AirPods Pro",
             amount=4650.0,
-            history=history
+            history=history,
+            demo_mode=demo_mode,
+            simulated_ist_hour=simulated_ist_hour,
+            failure_code=failure_code
         )
         return {
             "ai_spoken_reply": result.get("reply_text"),
@@ -73,7 +83,10 @@ class VoiceAgent:
         order_id: str = "RZP-8921",
         sku: str = "Apple AirPods Pro",
         amount: float = 4650.0,
-        history: Optional[List[Dict[str, Any]]] = None
+        history: Optional[List[Dict[str, Any]]] = None,
+        demo_mode: Optional[bool] = None,
+        simulated_ist_hour: Optional[int] = None,
+        failure_code: str = "E_504_GATEWAY_TIMEOUT"
     ) -> Dict[str, Any]:
         user_text = (message or "").strip()
         discount_price = round(amount * 0.95)
@@ -84,7 +97,7 @@ class VoiceAgent:
         if anthropic_key and HAS_ANTHROPIC:
             try:
                 client = Anthropic(api_key=anthropic_key)
-                context = f"Customer: {customer_name}, Order: #{order_id}, Item: {sku}, Amount: ₹{amount:,.2f}, Language: {language}"
+                context = f"Customer: {customer_name}, Order: #{order_id}, Item: {sku}, Amount: ₹{amount:,.2f}, Failure: {failure_code}, Language: {language}"
                 history_text = "\n".join([f"{h.get('role')}: {h.get('text')}" for h in (history or [])[-4:]])
                 response = client.messages.create(
                     model="claude-3-5-sonnet-latest",
@@ -96,7 +109,10 @@ class VoiceAgent:
                 match = re.search(r'\{.*\}', text_content, re.DOTALL)
                 if match:
                     parsed = json.loads(match.group(0))
-                    return cls._gatekeep_with_policyguard(parsed, amount, discount_price, sku, order_id, customer_name, history)
+                    return cls._gatekeep_with_policyguard(
+                        parsed, amount, discount_price, sku, order_id, customer_name,
+                        history, demo_mode, simulated_ist_hour, failure_code
+                    )
             except Exception as e:
                 print(f"[VoiceAgent LLM Error - Anthropic]: {e}")
 
@@ -104,7 +120,7 @@ class VoiceAgent:
         if gemini_key and HAS_GENAI:
             try:
                 client = genai.Client(api_key=gemini_key)
-                context = f"Customer: {customer_name}, Order: #{order_id}, Item: {sku}, Amount: ₹{amount:,.2f}, Language: {language}"
+                context = f"Customer: {customer_name}, Order: #{order_id}, Item: {sku}, Amount: ₹{amount:,.2f}, Failure: {failure_code}, Language: {language}"
                 prompt = f"{SYSTEM_PROMPT}\n\n{context}\nCustomer said: \"{user_text}\""
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
@@ -114,7 +130,10 @@ class VoiceAgent:
                 match = re.search(r'\{.*\}', text_content, re.DOTALL)
                 if match:
                     parsed = json.loads(match.group(0))
-                    return cls._gatekeep_with_policyguard(parsed, amount, discount_price, sku, order_id, customer_name, history)
+                    return cls._gatekeep_with_policyguard(
+                        parsed, amount, discount_price, sku, order_id, customer_name,
+                        history, demo_mode, simulated_ist_hour, failure_code
+                    )
             except Exception as e:
                 print(f"[VoiceAgent LLM Error - Gemini]: {e}")
 
@@ -122,6 +141,20 @@ class VoiceAgent:
         t = user_text.lower()
         is_kn = language == "kn-IN" or any(w in t for w in ["ಹೌದು", "ಯಾರು", "ತಪ್ಪು", "ರದ್ದು", "ಬೆಲೆ"])
         is_hi = language == "hi-IN" or any(w in t for w in ["नमस्ते", "हाँ", "गलत", "रद्द", "महंगा"])
+
+        # ── 1. DND / Stopping Rule MUST BE EVALUATED FIRST (DPDP Priority) ────────────────
+        if any(w in t for w in ["wrong number", "not rajesh", "stop calling", "remove my number", "dont call", "don't call", "dnd", "opt out", "गलत नंबर", "ತಪ್ಪು ಸಂಖ್ಯೆ", "ಕರೆ ಮಾಡಬೇಡಿ"]):
+            reply = "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately."
+            if is_kn: reply = "ಕ್ಷಮಿಸಿ! ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು DND ಪಟ್ಟಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಇನ್ನು ಯಾವುದೇ ಕರೆಗಳು ಬರುವುದಿಲ್ಲ."
+            if is_hi: reply = "माफ़ी चाहते हैं। आपका नंबर DND लिस्ट में जोड़ दिया गया है, आगे कोई कॉल नहीं आएगी।"
+            return cls._gatekeep_with_policyguard({
+                "reply_text": reply,
+                "intent": "DND_STOPPING_RULE",
+                "sentiment": "Identity Refusal (DND)",
+                "action_logged": "PolicyGuard: DPDP / DNC Rule Triggered — Suppressed further retries (0 retries)",
+                "quick_replies": ["Done, Thank You"],
+                "trigger_whatsapp_link": False
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Cancellation Final
         if any(w in t for w in ["no reason, just cancel", "still cancel", "ordered by mistake", "confirm cancel", "just cancel", "yes cancel"]):
@@ -135,10 +168,10 @@ class VoiceAgent:
                 "action_logged": f"Order #{order_id} ({sku}) cancelled upon customer confirmation",
                 "quick_replies": ["Done, Thank You", "Re-order Product"],
                 "trigger_whatsapp_link": False
-            }, amount, discount_price, sku, order_id, customer_name, history)
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Cancellation Motive Probe
-        if any(w in t for w in ["cancel", "rather not", "second thoughts", "drop this", "hold off", "dont want", "don't want", "not interested", "change my mind", "stop", "रद्द", "ಕ್ಯಾನ್ಸಲ್"]):
+        if any(w in t for w in ["cancel", "rather not", "second thoughts", "drop this", "hold off", "dont want", "don't want", "not interested", "change my mind", "ರದ್ದ", "ಕ್ಯಾನ್ಸಲ್"]):
             reply = f"I understand. Before processing cancellation for Order #{order_id} ({sku}), may I ask the reason: is it because of the price, delivery timing, or something else?"
             if is_kn: reply = f"ಅರ್ಥಮಾಡಿಕೊಂಡೆ. #{order_id} ರದ್ದು ಮಾಡುವ ಮೊದಲು: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ, ವಿತರಣೆ ವಿಳಂಬವೇ, ಅಥವಾ ಬೇರೆ ಕಾರಣವೇ? ನಾನು ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
             if is_hi: reply = f"समझ गया। #{order_id} रद्द करने से पहले — क्या कारण है: कीमत ज़्यादा है, डिलीवरी में देरी है, या कोई और बात?"
@@ -149,7 +182,7 @@ class VoiceAgent:
                 "action_logged": f"Cancellation motive probe initiated for {sku}",
                 "quick_replies": ["Price is too high", "Delivery delay", "Ordered by mistake", "No reason, just cancel"],
                 "trigger_whatsapp_link": False
-            }, amount, discount_price, sku, order_id, customer_name, history)
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Price Objection & 5% Discount
         if any(w in t for w in ["price", "expensive", "steep", "cost", "discount", "offer", "budget", "too high", "affordable", "save232", "accept", "महंगा", "ದುಬಾರಿ"]):
@@ -162,7 +195,7 @@ class VoiceAgent:
                     "action_logged": f"PolicyGuard: Applied approved 5% loyalty code SAVE232 (₹{discount_price:,.0f})",
                     "quick_replies": ["Paid via Google Pay", "Paid via PhonePe", "Paid via Paytm", "Talk to Manager"],
                     "trigger_whatsapp_link": True
-                }, amount, discount_price, sku, order_id, customer_name, history)
+                }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
             else:
                 reply = f"I can apply an authorized 5% loyalty discount (SAVE232) for your {sku}, bringing your total to ₹{discount_price:,.0f} (saving ₹{savings:,.0f}). Would you like to accept this offer?"
                 return cls._gatekeep_with_policyguard({
@@ -172,7 +205,7 @@ class VoiceAgent:
                     "action_logged": f"PolicyGuard: Quoted authorized 5% loyalty discount SAVE232 (₹{discount_price:,.0f})",
                     "quick_replies": [f"✓ Accept ₹{discount_price:,.0f} Offer", "Send on WhatsApp", "No reason, just cancel"],
                     "trigger_whatsapp_link": False
-                }, amount, discount_price, sku, order_id, customer_name, history)
+                }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Delivery Delay Upgrade
         if any(w in t for w in ["delay", "slow", "delivery", "late", "parcel", "taking too long", "when will", "arrive", "shipping", "तಡ", "ವಿಳಂಬ", "देरी"]):
@@ -184,19 +217,7 @@ class VoiceAgent:
                 "action_logged": f"PolicyGuard: Upgraded shipping for {sku} to Priority 24-Hour Express (cost=0)",
                 "quick_replies": ["Send on WhatsApp", "Send via SMS", "Talk to Manager"],
                 "trigger_whatsapp_link": False
-            }, amount, discount_price, sku, order_id, customer_name, history)
-
-        # DND / Stopping Rule
-        if any(w in t for w in ["wrong number", "not rajesh", "stop calling", "remove my number", "dont call", "don't call", "dnd", "opt out", "गलत नंबर", "ತಪ್ಪು ಸಂಖ್ಯೆ"]):
-            reply = "My apologies! Your number has been registered on our DND list. All automated outreach is halted immediately."
-            return cls._gatekeep_with_policyguard({
-                "reply_text": reply,
-                "intent": "DND_STOPPING_RULE",
-                "sentiment": "Identity Refusal (DND)",
-                "action_logged": "PolicyGuard: DPDP / DNC Rule Triggered — Suppressed further retries (0 retries)",
-                "quick_replies": ["Done, Thank You"],
-                "trigger_whatsapp_link": False
-            }, amount, discount_price, sku, order_id, customer_name, history)
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # WhatsApp 1-Tap UPI Dispatch
         if any(w in t for w in ["whatsapp", "upi", "gpay", "phonepe", "paytm", "link", "send link", "ವಾಟ್ಸಾಪ್", "व्हाट्सएप"]):
@@ -208,7 +229,7 @@ class VoiceAgent:
                 "action_logged": f"PolicyGuard: Dispatched verified Razorpay 1-Tap UPI WhatsApp deep links for ₹{amount:,.0f}",
                 "quick_replies": ["Paid via Google Pay", "Paid via PhonePe", "Paid via Paytm", "Talk to Manager"],
                 "trigger_whatsapp_link": True
-            }, amount, discount_price, sku, order_id, customer_name, history)
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Payment Confirmed
         if any(w in t for w in ["paid", "done", "completed", "already paid", "sent money", "ಪಾವತಿಸಿದೆ", "ಮಾಡಿದೆ", "भुगतान किया"]):
@@ -220,7 +241,7 @@ class VoiceAgent:
                 "action_logged": f"Payment of ₹{amount:,.0f} confirmed via webhook, invoice generated, priority warehouse dispatch approved",
                 "quick_replies": ["✓ Order Complete", "Download Tax Invoice"],
                 "trigger_whatsapp_link": False
-            }, amount, discount_price, sku, order_id, customer_name, history)
+            }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
         # Default Greeting
         return cls._gatekeep_with_policyguard({
@@ -230,7 +251,7 @@ class VoiceAgent:
             "action_logged": f"Stated pending order context for {sku} (₹{amount:,.0f})",
             "quick_replies": ["Yes, Complete Order", "Send on WhatsApp", "I want to cancel", "Talk to Manager"],
             "trigger_whatsapp_link": False
-        }, amount, discount_price, sku, order_id, customer_name, history)
+        }, amount, discount_price, sku, order_id, customer_name, history, demo_mode, simulated_ist_hour, failure_code)
 
     @staticmethod
     def _gatekeep_with_policyguard(
@@ -240,7 +261,10 @@ class VoiceAgent:
         sku: str = "",
         order_id: str = "RZP-8921",
         customer_name: str = "Rajesh Kumar",
-        history: Optional[List[Dict[str, Any]]] = None
+        history: Optional[List[Dict[str, Any]]] = None,
+        demo_mode: Optional[bool] = None,
+        simulated_ist_hour: Optional[int] = None,
+        failure_code: str = "E_504_GATEWAY_TIMEOUT"
     ) -> Dict[str, Any]:
         """
         Enforces PolicyGuard verification on every turn.
@@ -250,11 +274,15 @@ class VoiceAgent:
         discount_percent = 5.0 if ("PRICE_RETENTION" in intent) else 0.0
         is_opt_out = (intent == "DND_STOPPING_RULE")
         
-        # 1. Dynamically compute transaction risk using actual transaction and customer context
+        # Determine demo_mode (defaults to False in real production unless explicit demo flag or env var is set)
+        if demo_mode is None:
+            demo_mode = os.getenv("REVENUEOS_DEMO_MODE", "true").lower() in ("true", "1")
+
+        # 1. Dynamically compute transaction risk using actual transaction, customer, and failure reason
         risk_profile = analyze_transaction_risk(
             transaction_data={
                 "amount": original_amount,
-                "failure_code": "E_504_GATEWAY_TIMEOUT",
+                "failure_code": failure_code,
                 "order_id": order_id,
                 "sku": sku
             },
@@ -271,8 +299,10 @@ class VoiceAgent:
             "customer_opt_out": is_opt_out,
             "action_type": "DND_REGISTRATION" if is_opt_out else "RECOVERY_DISPATCH",
             "amount": original_amount,
-            "demo_mode": True
+            "demo_mode": demo_mode
         }
+        if simulated_ist_hour is not None:
+            tx["simulated_ist_hour"] = simulated_ist_hour
         
         # 2. Unconditionally execute deterministic PolicyGuard evaluation
         eval_result = PolicyGuard.evaluate_all(tx)
@@ -280,6 +310,7 @@ class VoiceAgent:
         if eval_result.get("is_dnd_stop"):
             parsed["action_logged"] = "PolicyGuard: DPDP Stopping Rule verified & enforced (0 retries, outreach suppressed)"
         elif not eval_result.get("passed", True):
+            # Unauthorized policy attempt blocked -> Route to Human Manager
             parsed["reply_text"] = "I understand your request. Let me connect you directly with Senior Support Manager Vikram to review this case."
             parsed["intent"] = "HUMAN_ESCALATION"
             parsed["action_logged"] = f"PolicyGuard BLOCKED: {', '.join(eval_result.get('violations', []))}"

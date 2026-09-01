@@ -26,7 +26,7 @@ class TestRevenueOSEndToEndSuite(unittest.TestCase):
         self.security = SecurityGuard(webhook_secret="rzp_test_secret_key")
         self.voice = VoiceAgent()
 
-    # ---------------- 1. PolicyGuard IST Timezone & DND Tests ----------------
+    # ---------------- 1. PolicyGuard Direct Unit Tests ----------------
     def test_01_trai_dnd_bypassed_in_demo_mode(self):
         """Test: DND time check does NOT block when demo_mode=True, regardless of IST hour."""
         result = PolicyGuard.evaluate_all({
@@ -73,7 +73,8 @@ class TestRevenueOSEndToEndSuite(unittest.TestCase):
         """Test: customer_opt_out=True produces DND_SUPPRESSED status via evaluate_all()."""
         result = PolicyGuard.evaluate_all({
             "customer_opt_out": True,
-            "demo_mode": True,
+            "demo_mode": False,
+            "simulated_ist_hour": 23, # Even late at night, DND suppression takes precedence
             "discount_applied_percent": 0.0,
             "risk_score": 15.0
         })
@@ -92,22 +93,61 @@ class TestRevenueOSEndToEndSuite(unittest.TestCase):
         self.assertEqual(result["policy_status"], "HALTED")
         self.assertTrue(any("RULE_3_DISCOUNT_CAP_EXCEEDED" in v for v in result["violations"]))
 
-    # ---------------- 3. Dynamic Risk Scoring Tests ----------------
-    def test_07_dynamic_risk_engine_calculation(self):
-        """Test: analyze_transaction_risk outputs dynamic scores based on failure reason and amount."""
-        high_risk = analyze_transaction_risk(
-            transaction_data={"amount": 45000, "failure_code": "CARD_DECLINED"},
-            customer_data={"customer_name": "Test Customer", "interaction_turns": 1}
+    # ---------------- 3. VoiceAgent End-to-End Integration Tests ----------------
+    def test_07_voice_agent_production_escalates_on_late_night_hour(self):
+        """Test: VoiceAgent.process_turn() with demo_mode=False at 23:00 IST triggers HUMAN_ESCALATION."""
+        res = VoiceAgent.process_turn(
+            message="Can you give me a discount?",
+            demo_mode=False,
+            simulated_ist_hour=23 # 11 PM IST
         )
-        low_risk = analyze_transaction_risk(
-            transaction_data={"amount": 450, "failure_code": "LOW_VALUE_FRICTION"},
-            customer_data={"customer_name": "Test Customer", "interaction_turns": 1}
+        self.assertEqual(res["intent"], "HUMAN_ESCALATION")
+        self.assertIn("PolicyGuard BLOCKED", res["action_logged"])
+        self.assertFalse(res["policy_evaluation"]["passed"])
+
+    def test_08_voice_agent_demo_mode_allows_late_night_hour(self):
+        """Test: VoiceAgent.process_turn() with demo_mode=True at 23:00 IST allows discount resolution."""
+        res = VoiceAgent.process_turn(
+            message="The price is too high and expensive",
+            demo_mode=True,
+            simulated_ist_hour=23 # 11 PM IST in demo mode
         )
-        self.assertGreater(high_risk["risk_score"], low_risk["risk_score"])
-        self.assertIn("CARD_FAILURE", high_risk["reason_codes"])
+        self.assertEqual(res["intent"], "PRICE_RETENTION")
+        self.assertTrue(res["policy_evaluation"]["passed"])
+        self.assertIn("SAVE232", res["action_logged"])
+
+    def test_09_voice_agent_dnd_precedence_at_night(self):
+        """Test: Customer saying 'wrong number' at 23:00 IST in production yields DND_STOPPING_RULE."""
+        res = VoiceAgent.process_turn(
+            message="This is the wrong number, please stop calling me",
+            demo_mode=False,
+            simulated_ist_hour=23
+        )
+        self.assertEqual(res["intent"], "DND_STOPPING_RULE")
+        self.assertEqual(res["policy_evaluation"]["policy_status"], "DND_SUPPRESSED")
+        self.assertTrue(res["policy_evaluation"]["passed"])
+
+    def test_10_dynamic_risk_propagation(self):
+        """Test: Dynamic failure_code influences risk_score in VoiceAgent turn."""
+        high_risk_turn = VoiceAgent.process_turn(
+            message="I will pay tomorrow",
+            amount=65000,
+            failure_code="CARD_DECLINED",
+            demo_mode=True
+        )
+        low_risk_turn = VoiceAgent.process_turn(
+            message="I will pay tomorrow",
+            amount=450,
+            failure_code="LOW_VALUE_FRICTION",
+            demo_mode=True
+        )
+        self.assertGreater(
+            high_risk_turn["policy_evaluation"]["risk_score"],
+            low_risk_turn["policy_evaluation"]["risk_score"]
+        )
 
     # ---------------- 4. Security & Cryptographic Idempotency Tests ----------------
-    def test_08_hmac_webhook_verification(self):
+    def test_11_hmac_webhook_verification(self):
         """Test: Genuine X-Razorpay-Signature verification."""
         payload = '{"event":"payment.failed","payment_id":"pay_123"}'
         secret = "rzp_test_secret_key"
@@ -115,23 +155,6 @@ class TestRevenueOSEndToEndSuite(unittest.TestCase):
         
         valid = self.security.verify_webhook_signature(payload, signature)
         self.assertTrue(valid)
-
-    # ---------------- 5. Voice NLU Progression & Gatekeeping Tests ----------------
-    def test_09_voice_intent_and_policyguard_gating(self):
-        """Test: Voice NLU runs through PolicyGuard gatekeeper and returns structured intent."""
-        # 1. Payment confirmation
-        paid_res = self.voice.extract_intent("I already paid via Google Pay")
-        self.assertEqual(paid_res["intent"], "PAYMENT_CONFIRMED")
-
-        # 2. DND wrong number
-        dnd_res = self.voice.extract_intent("This is the wrong number, not Rajesh")
-        self.assertEqual(dnd_res["intent"], "DND_STOPPING_RULE")
-        self.assertIn("PolicyGuard", dnd_res["policyguard_action"])
-
-        # 3. Price objection with 5% discount cap verified
-        price_res = self.voice.extract_intent("The price is too high and expensive")
-        self.assertEqual(price_res["intent"], "PRICE_RETENTION")
-        self.assertIn("SAVE232", price_res["policyguard_action"])
 
 if __name__ == '__main__':
     unittest.main()

@@ -27,8 +27,7 @@ class PolicyGuard:
         violations: List[str] = []
         rules_checked = 12
         
-        # 1. Evaluate IST Time for TRAI DND (9 PM to 8 AM IST)
-        # Allows explicitly passing simulated_ist_hour for testing boundary conditions
+        # 1. Rule 1: TRAI DND Time Window (9 PM to 8 AM IST)
         current_ist_time = cls.get_ist_datetime()
         current_ist_hour = tx.get("simulated_ist_hour", current_ist_time.hour)
         is_demo = tx.get("demo_mode", False)
@@ -88,20 +87,26 @@ class PolicyGuard:
         if not audit_logged:
             violations.append("RULE_12_AUDIT_LOG_MISSING: Decision must be recorded in SHA-256 ledger.")
 
-        # Determine compliance outcome
-        # If the only violation is Rule 4 (customer requested DND), it is a compliant SUPPRESSED stop
-        is_dnd_stop = customer_opt_out and len(violations) == 1 and "RULE_4" in violations[0]
-        is_passed = len(violations) == 0
-
-        policy_status = "APPROVED" if is_passed else ("DND_SUPPRESSED" if is_dnd_stop else "HALTED")
+        # Determine compliance outcome:
+        # If customer explicitly requested DND (Rule 4), compliance mandates stopping immediately.
+        # This is a compliant DND_SUPPRESSED outcome regardless of time of day.
+        if customer_opt_out:
+            is_dnd_stop = True
+            is_passed = True
+            policy_status = "DND_SUPPRESSED"
+        else:
+            is_dnd_stop = False
+            is_passed = len(violations) == 0
+            policy_status = "APPROVED" if is_passed else "HALTED"
 
         return {
-            "passed": is_passed or is_dnd_stop,
+            "passed": is_passed,
             "policy_status": policy_status,
             "is_dnd_stop": is_dnd_stop,
             "rules_checked": rules_checked,
             "violations_count": len(violations),
             "violations": violations,
+            "risk_score": risk_score,
             "ist_hour": current_ist_hour,
             "demo_mode": is_demo,
             "timestamp": current_ist_time.isoformat()

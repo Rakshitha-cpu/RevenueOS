@@ -10,6 +10,9 @@ class IntentRequest(BaseModel):
     utterance: str = Field(..., example="Nanna card work aagthilla, naale pay madthini")
     session_id: Optional[str] = Field(None, example="call_session_9042")
     history: Optional[List[Dict[str, Any]]] = Field(None, description="Previous multi-turn conversation exchanges")
+    demo_mode: Optional[bool] = Field(None, example=True)
+    simulated_ist_hour: Optional[int] = Field(None, example=14)
+    failure_code: Optional[str] = Field("E_504_GATEWAY_TIMEOUT", example="E_504_GATEWAY_TIMEOUT")
 
 class VoiceTurnRequest(BaseModel):
     message: str = Field(..., example="I want to cancel this order")
@@ -19,6 +22,9 @@ class VoiceTurnRequest(BaseModel):
     sku: Optional[str] = Field("Apple AirPods Pro", example="Apple AirPods Pro")
     amount: Optional[float] = Field(4650.0, example=4650.0)
     history: Optional[List[Dict[str, Any]]] = Field(default=[], description="Previous multi-turn messages")
+    demo_mode: Optional[bool] = Field(None, example=True)
+    simulated_ist_hour: Optional[int] = Field(None, example=14)
+    failure_code: Optional[str] = Field("E_504_GATEWAY_TIMEOUT", example="E_504_GATEWAY_TIMEOUT")
 
 @router.post("/intent")
 def extract_voice_intent(payload: IntentRequest):
@@ -28,7 +34,10 @@ def extract_voice_intent(payload: IntentRequest):
     """
     structured_intent = voice_agent.extract_intent(
         user_utterance=payload.utterance,
-        history=payload.history
+        history=payload.history,
+        demo_mode=payload.demo_mode,
+        simulated_ist_hour=payload.simulated_ist_hour,
+        failure_code=payload.failure_code
     )
     return {
         "session_id": payload.session_id,
@@ -49,5 +58,8 @@ def voice_agent_turn(req: VoiceTurnRequest):
         order_id=req.order_id,
         sku=req.sku,
         amount=req.amount,
-        history=req.history
+        history=req.history,
+        demo_mode=req.demo_mode,
+        simulated_ist_hour=req.simulated_ist_hour,
+        failure_code=req.failure_code
     )
