@@ -1,188 +1,408 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, AlertTriangle, TrendingUp, CreditCard, Clock, Activity, Cpu, CheckCircle, Sparkles } from 'lucide-react';
+import { 
+  User, AlertTriangle, TrendingUp, CreditCard, Clock, Activity, 
+  Cpu, CheckCircle, Sparkles, ShieldCheck, Ban, Phone, ArrowRight, Smartphone
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+interface CustomerData {
+  id: string;
+  name: string;
+  avatar: string;
+  tier: string;
+  since: string;
+  targetOrder: string;
+  sku: string;
+  amount: number;
+  failureCode: string;
+  failureReason: string;
+  revenueRisk: number;
+  recoveryProb: number;
+  preferredMethod: string;
+  contactWindow: string;
+  historySummary: string;
+  historyBars: ('success' | 'failed' | 'pending')[];
+  aiDiagnosis: string;
+  aiRecommendation: string;
+  expectedNet: number;
+  yieldPercent: number;
+  rationale: string[];
+  policyGuardAction: string;
+  whatsappMessage: string;
+  linkUrl: string;
+  routeHref: string;
+  routeLabel: string;
+}
+
+const CUSTOMER_PROFILES: CustomerData[] = [
+  {
+    id: 'CUST-8921',
+    name: 'Rajesh Kumar',
+    avatar: 'RK',
+    tier: 'E-Commerce Retail Shopper',
+    since: 'Nov 2023',
+    targetOrder: '#RZP-8921',
+    sku: 'Apple AirPods Pro (2nd Gen)',
+    amount: 4650,
+    failureCode: 'E_504_GATEWAY_TIMEOUT',
+    failureReason: 'HDFC Bank Card Gateway Timed Out. No amount debited.',
+    revenueRisk: 78,
+    recoveryProb: 91,
+    preferredMethod: '1-Tap UPI (Google Pay / PhonePe)',
+    contactWindow: 'Immediate (Active on device)',
+    historySummary: '8 success • 1 failed • 1 recovered',
+    historyBars: ['success','success','success','success','success','success','success','success','failed','pending'],
+    aiDiagnosis: 'Bank gateway timeout friction. Customer has high purchasing intent; retrying card will fail again due to HDFC outage. 1-Tap UPI bypasses card downtime.',
+    aiRecommendation: 'Launch Vernacular Voice Agent & send 1-Tap UPI link to WhatsApp.',
+    expectedNet: 4547,
+    yieldPercent: 97.8,
+    rationale: [
+      'High Intent Signal: Customer attempted payment within last 90 seconds.',
+      'Root Cause: HDFC Card E_504 timeout; UPI rail has 99.9% uptime right now.',
+      'Least Cost Intervention: WhatsApp 1-Tap link costs ₹1.20 vs ₹45 manual call center.'
+    ],
+    policyGuardAction: 'POLICYGUARD GATED: DISPATCHED WITH ZERO DIRECT FINANCIAL AUTHORITY',
+    whatsappMessage: 'Hi Rajesh! Your recent payment of ₹4,650 for Apple AirPods Pro timed out at HDFC bank. To complete your order before inventory release, tap here to pay in 1 click:',
+    linkUrl: 'https://rzp.io/i/airpods8921',
+    routeHref: '/voice',
+    routeLabel: 'TEST VOICE AGENT'
+  },
+  {
+    id: 'CUST-98214',
+    name: 'Rahul Sharma',
+    avatar: 'RS',
+    tier: 'B2B SaaS Annual Subscriber',
+    since: 'Aug 2024',
+    targetOrder: '#SUB-9402',
+    sku: 'RevenueOS Pro Team License (Annual)',
+    amount: 7999,
+    failureCode: 'E_MANDATE_EXPIRED',
+    failureReason: 'Recurring credit card mandate expired on corporate card.',
+    revenueRisk: 87,
+    recoveryProb: 82,
+    preferredMethod: 'UPI Autopay / Corporate Card',
+    contactWindow: '7:00 PM – 9:00 PM (Predicted Commute Window)',
+    historySummary: '12 success • 1 failed • 1 pending',
+    historyBars: ['success','success','success','success','success','success','success','success','success','success','success','success','failed','pending'],
+    aiDiagnosis: 'Recurring subscription mandate friction. Attempting instant card recharge during work hours causes friction; ML model predicts high responsiveness between 7-9 PM.',
+    aiRecommendation: 'Smart-timed WhatsApp Payment Link with 1-Tap UPI mandate renewal.',
+    expectedNet: 7820,
+    yieldPercent: 97.7,
+    rationale: [
+      'High Intent Signal: Customer has 12 consecutive months of on-time renewals.',
+      'Root Cause: Card expiry date mismatch; recurring token expired.',
+      'Optimal Timing: Scheduled outreach during customer commute window.'
+    ],
+    policyGuardAction: 'POLICYGUARD GATED: SMART-TIMED DISPATCH RESPECTING DND HOURS',
+    whatsappMessage: 'Hi Rahul! We noticed your annual subscription renewal of ₹7,999 on your saved card failed due to token expiration. Tap here to renew seamlessly via UPI:',
+    linkUrl: 'https://rzp.io/i/7xF81Lm',
+    routeHref: '/command-center',
+    routeLabel: 'VIEW POLICYGUARD TRACE'
+  },
+  {
+    id: 'CUST-5510',
+    name: 'Priya Sharma',
+    avatar: 'PS',
+    tier: 'VIP High-LTV Shopper',
+    since: 'Jan 2023',
+    targetOrder: '#RZP-5510',
+    sku: 'Sony WH-1000XM5 Premium Headphones',
+    amount: 24990,
+    failureCode: 'E_OTP_EXPIRED',
+    failureReason: 'Customer missed OTP SMS while traveling.',
+    revenueRisk: 45,
+    recoveryProb: 95,
+    preferredMethod: 'PhonePe UPI / Split Pay',
+    contactWindow: 'Immediate (VIP SLA < 45s)',
+    historySummary: '19 success • 0 failed • High LTV (₹1,40,000+)',
+    historyBars: ['success','success','success','success','success','success','success','success','success','success','success','success','success','success','success','success','success','success','success','failed'],
+    aiDiagnosis: 'VIP Customer with ₹1.4L lifetime spend missed 2FA OTP. Eligible for 5% loyalty discount code (SAVE232) and Priority 24-Hour Express Dispatch.',
+    aiRecommendation: 'Apply authorized 5% loyalty code SAVE232 (₹23,740) & offer 1-Tap UPI.',
+    expectedNet: 23740,
+    yieldPercent: 95.0,
+    rationale: [
+      'VIP Loyalty Status: Lifetime value exceeds ₹1.4 Lakhs across 19 orders.',
+      'Authorized Incentive: PolicyGuard approved 5% retention discount code SAVE232.',
+      'High SLA Target: Recover order within 45 seconds to preserve merchant NPS.'
+    ],
+    policyGuardAction: 'POLICYGUARD GATED: 5% RETENTION CAP ENFORCED (SAVE232 APPLIED)',
+    whatsappMessage: 'Namaste Priya! As a valued VIP member, we reserved your Sony WH-1000XM5 and applied a 5% loyalty code (SAVE232). New Total: ₹23,740. Tap to pay via PhonePe:',
+    linkUrl: 'https://rzp.io/i/priya5510',
+    routeHref: '/voice',
+    routeLabel: 'OPEN VIP VOICE CALL'
+  },
+  {
+    id: 'CUST-3309',
+    name: 'Sneha Patil',
+    avatar: 'SP',
+    tier: 'DND Registered Customer (DPDP)',
+    since: 'May 2024',
+    targetOrder: '#RZP-3309',
+    sku: 'Nike Air Max 270',
+    amount: 8995,
+    failureCode: 'E_USER_DROPOUT',
+    failureReason: 'Customer abandoned checkout and previously opted out of telecalling.',
+    revenueRisk: 95,
+    recoveryProb: 0,
+    preferredMethod: 'DND / Opt-Out Active',
+    contactWindow: 'BLOCKED (DND / No Consent)',
+    historySummary: '1 success • 2 opt-outs • Outreach Halted',
+    historyBars: ['success','failed','failed'],
+    aiDiagnosis: 'PolicyGuard Firewall Triggered: Customer mobile number is registered on TRAI DND and previously opted out. Automated calls and push notifications are strictly suppressed.',
+    aiRecommendation: 'HALT ALL OUTBOUND ACTIONS. Zero retries enforced for 100% DPDP compliance.',
+    expectedNet: 0,
+    yieldPercent: 0,
+    rationale: [
+      'DPDP Act Compliance: Explicit customer consent revoked; zero outbound calls permitted.',
+      'Brand Protection: Avoids regulatory fines and spam classification.',
+      'Audit Logging: Immutable audit trace recorded in batch ledger.'
+    ],
+    policyGuardAction: 'POLICYGUARD GATED: STOPPING RULE ACTIVATED (0 RETRIES ENFORCED)',
+    whatsappMessage: '[OUTREACH SUPPRESSED BY POLICYGUARD DUE TO DND PREFERENCES]',
+    linkUrl: '#',
+    routeHref: '/batch-evaluation',
+    routeLabel: 'VIEW DND AUDIT LEDGER'
+  }
+];
 
 export default function CustomerProfile() {
   const router = useRouter();
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerData>(CUSTOMER_PROFILES[0]);
   const [isExecuting, setIsExecuting] = useState(false);
 
   const handleExecute = () => {
     setIsExecuting(true);
     setTimeout(() => {
-      router.push('/command-center');
-    }, 1500);
+      setIsExecuting(false);
+      router.push(selectedCustomer.routeHref);
+    }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
-      <header className="mb-8 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-4">
-            <User size={24} />
+    <div className="min-h-screen bg-slate-950 text-gray-100 p-6 md:p-8 font-sans">
+      
+      {/* Top Customer Persona Switcher */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Micro-Level Customer Signal Intelligence</h2>
+            <h1 className="text-2xl font-black text-white mt-0.5">Customer Diagnosis & Economic Explainability</h1>
+          </div>
+          <span className="text-xs bg-slate-900 border border-gray-800 text-gray-400 px-3 py-1.5 rounded-xl self-start md:self-auto">
+            Select persona to inspect distinct recovery strategies:
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {CUSTOMER_PROFILES.map((cust) => {
+            const isSelected = selectedCustomer.id === cust.id;
+            return (
+              <button
+                key={cust.id}
+                onClick={() => setSelectedCustomer(cust)}
+                className={`p-3.5 rounded-2xl border text-left transition-all flex items-center space-x-3 ${
+                  isSelected
+                    ? 'bg-blue-600/15 border-blue-500 ring-2 ring-blue-500/40 shadow-lg'
+                    : 'bg-slate-900 border-gray-800 hover:border-gray-700 hover:bg-slate-800/60'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-gray-300'
+                }`}>
+                  {cust.avatar}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{cust.name}</p>
+                  <p className="text-[11px] text-gray-400 truncate">{cust.tier}</p>
+                  <p className="text-xs font-extrabold text-emerald-400 mt-0.5">₹{cust.amount.toLocaleString()}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Selected Profile Header */}
+      <header className="mb-6 bg-slate-900 border border-gray-800 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-lg">
+            {selectedCustomer.avatar}
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Rahul Sharma</h1>
-            <p className="text-gray-500">Customer ID: CUST-98214 • Since Aug 2024</p>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-2xl font-black text-white">{selectedCustomer.name}</h2>
+              <span className="text-xs bg-slate-800 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                {selectedCustomer.id}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              {selectedCustomer.tier} • Member Since {selectedCustomer.since} • Target: <b className="text-white">{selectedCustomer.sku}</b>
+            </p>
           </div>
         </div>
-        <div className="text-right bg-white px-6 py-3 rounded-xl border border-gray-200 shadow-sm">
-          <p className="text-sm font-semibold text-red-500 uppercase tracking-wide">Revenue At Risk</p>
-          <h2 className="text-3xl font-bold text-gray-900">₹7,999</h2>
+
+        <div className="text-right bg-slate-950 px-5 py-3 rounded-xl border border-gray-800 shadow-inner self-stretch md:self-auto">
+          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Revenue At Risk</p>
+          <h3 className="text-2xl font-black text-white">₹{selectedCustomer.amount.toLocaleString()}</h3>
+          <span className="text-[10px] text-red-400 font-mono">{selectedCustomer.failureCode}</span>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl">
+      {/* Profile Details Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl">
         
-        {/* Left Column - Metrics */}
-        <div className="lg:col-span-1 space-y-6">
+        {/* Left Column - Behavioral Metrics */}
+        <div className="lg:col-span-1 space-y-5">
           
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-gray-500 font-medium flex items-center"><AlertTriangle size={16} className="mr-2 text-red-500"/> Revenue Risk</span>
-              <span className="text-2xl font-bold text-red-600">87%</span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
-              <div className="bg-red-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+          {/* Risk vs Recovery Gauge */}
+          <div className="bg-slate-900 p-5 rounded-2xl border border-gray-800 shadow-lg space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-xs text-gray-400 font-semibold flex items-center">
+                  <AlertTriangle size={14} className="mr-1.5 text-red-400"/> Revenue Risk Score
+                </span>
+                <span className="text-lg font-black text-red-400">{selectedCustomer.revenueRisk}%</span>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2">
+                <div className="bg-red-500 h-2 rounded-full transition-all duration-500" style={{ width: `${selectedCustomer.revenueRisk}%` }}></div>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-gray-500 font-medium flex items-center"><TrendingUp size={16} className="mr-2 text-green-500"/> Recovery Prob.</span>
-              <span className="text-2xl font-bold text-green-600">82%</span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: '82%' }}></div>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-xs text-gray-400 font-semibold flex items-center">
+                  <TrendingUp size={14} className="mr-1.5 text-emerald-400"/> Measured Recovery Probability
+                </span>
+                <span className="text-lg font-black text-emerald-400">{selectedCustomer.recoveryProb}%</span>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full transition-all duration-500" style={{ width: `${selectedCustomer.recoveryProb}%` }}></div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-5">
+          {/* Shopper Signals */}
+          <div className="bg-slate-900 p-5 rounded-2xl border border-gray-800 space-y-4">
             <div>
-              <p className="text-sm text-gray-500 mb-1">Preferred Method</p>
-              <p className="font-semibold flex items-center text-gray-900"><CreditCard size={16} className="mr-2 text-blue-500"/> UPI (Razorpay)</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold mb-1">Preferred Recovery Rail</p>
+              <p className="text-xs font-bold text-white flex items-center">
+                <CreditCard size={14} className="mr-2 text-blue-400"/> {selectedCustomer.preferredMethod}
+              </p>
             </div>
+
             <div>
-              <p className="text-sm text-gray-500 mb-1">Previous Retry Success</p>
-              <p className="font-semibold text-green-600 text-lg">73%</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold mb-1">Predicted Contact Window</p>
+              <p className="text-xs font-bold text-white flex items-center">
+                <Clock size={14} className="mr-2 text-purple-400"/> {selectedCustomer.contactWindow}
+              </p>
             </div>
+
             <div>
-              <p className="text-sm text-gray-500 mb-1">Best Contact Time</p>
-              <p className="font-semibold flex items-center text-gray-900"><Clock size={16} className="mr-2 text-purple-500"/> 7:00 PM – 9:00 PM</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-3">Payment History</p>
-              <div className="flex space-x-1.5 items-end h-8">
-                {/* ████████████░░ visual representation */}
-                {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
-                  <div key={i} className="h-full w-4 bg-green-500 rounded-sm"></div>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold mb-2">Historical Payment Stream</p>
+              <div className="flex space-x-1 items-end h-6">
+                {selectedCustomer.historyBars.map((b, i) => (
+                  <div 
+                    key={i} 
+                    className={`flex-1 h-full rounded-sm ${
+                      b === 'success' ? 'bg-emerald-500' :
+                      b === 'failed' ? 'bg-red-500 animate-pulse' : 'bg-slate-700'
+                    }`}
+                  />
                 ))}
-                <div className="h-full w-4 bg-red-400 rounded-sm animate-pulse border-2 border-red-500"></div>
-                <div className="h-full w-4 bg-gray-200 rounded-sm"></div>
               </div>
-              <p className="text-xs text-gray-400 mt-2 font-mono">12 success • 1 failed • 1 pending</p>
+              <p className="text-[10px] text-gray-400 mt-2 font-mono">{selectedCustomer.historySummary}</p>
             </div>
           </div>
         </div>
 
-        {/* Right Column - AI Diagnosis & Recommendation */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Right Column - AI Diagnosis, ROI, and WhatsApp Preview */}
+        <div className="lg:col-span-2 space-y-5">
           
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
-              <Activity size={18} className="mr-2"/> AI Diagnosis
+          {/* AI Diagnosis Card */}
+          <div className="bg-slate-900 p-5 rounded-2xl border border-gray-800 shadow-lg">
+            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center">
+              <Activity size={14} className="mr-1.5 text-blue-400"/> Multi-Agent Diagnosis
             </h3>
-            <p className="text-xl font-medium text-gray-800 leading-relaxed">
-              Payment-method friction. Customer's saved credit card is consistently failing, but historical signals show high intent to pay via UPI.
+            <p className="text-sm font-medium text-gray-200 leading-relaxed">
+              {selectedCustomer.aiDiagnosis}
             </p>
           </div>
 
-          <div className="bg-blue-600 rounded-2xl shadow-lg p-8 text-white relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 opacity-10">
-              <Cpu size={220} />
+          {/* AI Recommendation & Economic Rationale Card */}
+          <div className="bg-gradient-to-br from-blue-900/40 via-slate-900 to-indigo-950/50 rounded-2xl border border-blue-500/40 p-6 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">AI Recommendation</span>
+              <span className="text-[11px] font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-400/30">
+                Expected Net: ₹{selectedCustomer.expectedNet.toLocaleString()} ({selectedCustomer.yieldPercent}% Yield)
+              </span>
             </div>
             
-            <h3 className="text-sm font-bold text-blue-200 uppercase tracking-wider mb-4 relative z-10">AI Recommendation</h3>
-            <h2 className="text-3xl font-bold mb-8 relative z-10 leading-tight">Use UPI payment link instead of another card retry.</h2>
-            
-            <div className="bg-blue-700/40 rounded-xl p-5 border border-blue-500/30 relative z-10 space-y-3">
-              <div className="flex justify-between items-center border-b border-blue-500/40 pb-2">
-                <p className="font-bold text-white uppercase tracking-wider text-xs flex items-center">
-                  <Sparkles size={14} className="mr-1.5 text-yellow-300" />
-                  Explainability &amp; Economic Rationale
-                </p>
-                <span className="text-[11px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/30">
-                  Expected Net: ₹7,820 (97.7% Yield)
-                </span>
-              </div>
-              <ul className="space-y-2 text-xs">
-                <li className="flex items-start">
-                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
-                  <span className="text-blue-50"><strong>High Intent Signal:</strong> Customer completed 12 previous UPI transactions on Razorpay.</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
-                  <span className="text-blue-50"><strong>Root Cause:</strong> HDFC Card E_504 timeout; retrying the same card has &lt;18% success probability.</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle size={16} className="text-blue-300 mr-2 mt-0.5 shrink-0" />
-                  <span className="text-blue-50"><strong>Least Cost Intervention:</strong> WhatsApp Payment Link costs ₹1.20 vs. ₹45.00 for call center outreach.</span>
-                </li>
+            <h2 className="text-xl font-extrabold text-white mb-4 leading-snug">
+              {selectedCustomer.aiRecommendation}
+            </h2>
+
+            <div className="bg-slate-950/60 rounded-xl p-4 border border-blue-500/30 space-y-2 mb-5">
+              <p className="font-bold text-white text-xs flex items-center border-b border-gray-800 pb-2 mb-2">
+                <Sparkles size={13} className="mr-1.5 text-amber-400" /> Explainability &amp; Economic Rationale
+              </p>
+              <ul className="space-y-1.5 text-xs text-gray-300">
+                {selectedCustomer.rationale.map((r, i) => (
+                  <li key={i} className="flex items-start">
+                    <CheckCircle size={14} className="text-blue-400 mr-2 mt-0.5 shrink-0" />
+                    <span>{r}</span>
+                  </li>
+                ))}
               </ul>
             </div>
-            
-            <div className="mt-6 flex flex-col space-y-3 relative z-10">
-              <div className="flex items-center text-xs font-semibold text-blue-200 mb-1 font-mono">
-                <span className="flex h-2 w-2 relative mr-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                POLICYGUARD GATED: DISPATCHED WITH ZERO DIRECT FINANCIAL AUTHORITY
-              </div>
-              
-              <div className="flex flex-wrap gap-4">
-                <button 
-                  onClick={handleExecute}
-                  disabled={isExecuting}
-                  className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-50 transition shadow-sm hover:scale-[1.02] disabled:opacity-75 disabled:cursor-wait"
-                >
-                  {isExecuting ? "TRACE GENERATING..." : "VIEW EXECUTION TRACE"}
-                </button>
-                <button 
-                  onClick={() => router.push('/simulator')}
-                  className="px-6 py-3 bg-blue-700/60 text-white font-medium rounded-lg hover:bg-blue-800 transition border border-blue-500/30"
-                >
-                  WHAT-IF SIMULATOR
-                </button>
-              </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="text-[10px] font-mono text-emerald-400 flex items-center">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block mr-1.5 animate-pulse" />
+                {selectedCustomer.policyGuardAction}
+              </span>
+
+              <button
+                onClick={handleExecute}
+                disabled={isExecuting}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1.5 shadow-lg shadow-blue-600/30 flex-shrink-0"
+              >
+                <span>{isExecuting ? 'Navigating...' : selectedCustomer.routeLabel}</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
           </div>
 
           {/* WhatsApp Last-Mile Preview */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-[#075E54] px-4 py-3 flex items-center justify-between text-white">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold overflow-hidden mr-3">
-                  <span className="text-xs">RS</span>
+          <div className="bg-slate-900 rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
+            <div className="bg-[#075E54] px-4 py-2.5 flex items-center justify-between text-white">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-7 h-7 bg-slate-200 text-slate-800 rounded-full flex items-center justify-center font-bold text-xs">
+                  {selectedCustomer.avatar}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Rahul Sharma</p>
-                  <p className="text-xs text-green-100 opacity-80">WhatsApp Business API</p>
+                  <p className="font-bold text-xs">{selectedCustomer.name}</p>
+                  <p className="text-[10px] text-green-100 opacity-80">WhatsApp Business API • Verified Merchant</p>
                 </div>
               </div>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Message Sent by AI</span>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">Autonomous Action</span>
             </div>
-            <div className="p-6 bg-[#EFEAE2] relative" style={{backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundSize: 'cover', opacity: 0.95}}>
-              <div className="flex justify-end relative z-10">
-                <div className="bg-[#DCF8C6] rounded-xl rounded-tr-none p-3 max-w-[85%] shadow-sm text-sm text-gray-800">
-                  <p className="mb-1 text-[10px] font-bold text-gray-500 tracking-wider">🤖 REVENUEOS AUTOPILOT</p>
-                  <p className="leading-relaxed">
-                    Hi Rahul! We noticed your recent payment of <b>₹7,999</b> on your saved card failed.<br/><br/>
-                    To secure your subscription without interruption, you can quickly complete it via UPI using this secure Razorpay link:<br/>
-                  </p>
-                  <a href="https://rzp.io/i/7xF81Lm" target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium block mt-2 hover:text-blue-800 font-mono">https://rzp.io/i/7xF81Lm ↗</a>
-                  <div className="flex justify-end items-center mt-1">
-                    <p className="text-[10px] text-gray-500 mr-1">10:42 AM IST</p>
-                    <span className="text-blue-500 text-[10px]">✓✓</span>
+            
+            <div className="p-5 bg-slate-950/80">
+              <div className="flex justify-end">
+                <div className="bg-[#054740] border border-[#0d6e64] rounded-xl rounded-tr-none p-3.5 max-w-[85%] text-xs text-gray-100 shadow-md">
+                  <p className="text-[9px] font-bold text-emerald-300 tracking-wider mb-1">🤖 REVENUEOS AUTOPILOT</p>
+                  <p className="leading-relaxed whitespace-pre-line">{selectedCustomer.whatsappMessage}</p>
+                  {selectedCustomer.linkUrl !== '#' && (
+                    <a href={selectedCustomer.linkUrl} target="_blank" rel="noreferrer" className="text-blue-300 underline font-mono block mt-2 text-[11px]">
+                      {selectedCustomer.linkUrl} ↗
+                    </a>
+                  )}
+                  <div className="flex justify-end items-center mt-1.5">
+                    <span className="text-[9px] text-gray-400 mr-1">Just now</span>
+                    <span className="text-blue-400 text-[10px]">✓✓</span>
                   </div>
                 </div>
               </div>
@@ -190,88 +410,6 @@ export default function CustomerProfile() {
           </div>
 
         </div>
-      </div>
-
-      {/* Evaluator Verification Section: Collapsible Progressive Disclosure */}
-      <div className="max-w-7xl mx-auto mt-8 font-sans space-y-4">
-        
-        {/* Collapsible Execution Trace Accordion */}
-        <details className="group bg-slate-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-200 text-white">
-          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-800/60 transition">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-950 text-blue-400 rounded-xl border border-blue-900">
-                <Activity size={18} />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Autonomous Pipeline Execution Trace (Customer: CUST-98214)</h4>
-                <p className="text-xs text-gray-400">Click to view 5-stage automated recovery from failure detection to settlement</p>
-              </div>
-            </div>
-            <span className="text-xs font-semibold text-blue-400 group-open:rotate-180 transition-transform duration-200">
-              ▼ Expand Trace
-            </span>
-          </summary>
-
-          <div className="p-5 pt-3 border-t border-gray-800/80 space-y-2 font-mono text-xs text-gray-300">
-            <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:52]</span> <span className="text-blue-400">DETECTOR:</span> <span>Ingested payment failure on Order #RZP-8921 (₹7,999, Card Network Timeout E_504)</span></div>
-            <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:54]</span> <span className="text-purple-400">DOSSIER:</span> <span>Evaluated Rahul Sharma history (12 success, 1 card decline, UPI propensity: 82%)</span></div>
-            <div className="flex items-start space-x-2"><span className="text-gray-500">[10:41:56]</span> <span className="text-yellow-400">POLICY:</span> <span>PolicyGuard check: Risk score 12% (&lt;85 threshold) ➔ Approved 1-Tap UPI WhatsApp Rail</span></div>
-            <div className="flex items-start space-x-2"><span className="text-gray-500">[10:42:01]</span> <span className="text-emerald-400">DISPATCH:</span> <span>Generated secure Razorpay deep link: <code className="text-blue-300">https://rzp.io/i/7xF81Lm</code> (Delivered via WhatsApp API)</span></div>
-            <div className="flex items-start space-x-2"><span className="text-gray-500">[10:42:15]</span> <span className="text-emerald-400">SETTLED:</span> <span>Customer completed UPI payment ➔ Recovered ₹7,999 revenue in 23 seconds!</span></div>
-          </div>
-        </details>
-
-        {/* Collapsible AI Learning Log Accordion */}
-        <details className="group bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
-          <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none hover:bg-slate-50 transition">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                <Cpu size={18} />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-gray-900">AI Learning &amp; Failure Recovery Log (What Broke & How We Fixed It)</h4>
-                <p className="text-xs text-gray-500">Click to view machine learning threshold adjustments and fraud shielding</p>
-              </div>
-            </div>
-            <span className="text-xs font-semibold text-blue-600 group-open:rotate-180 transition-transform duration-200">
-              ▼ Expand Proof
-            </span>
-          </summary>
-
-          <div className="p-5 pt-0 border-t border-gray-100 overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans mt-3">
-              <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider border-b border-gray-200">
-                <tr>
-                  <th className="py-2.5 px-3">Initial Failure</th>
-                  <th className="py-2.5 px-3">Root Cause</th>
-                  <th className="py-2.5 px-3">Fix Implemented</th>
-                  <th className="py-2.5 px-3">Measured Impact</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-700">
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-red-600">AI recommended card retry on 3rd failure</td>
-                  <td className="py-2.5 px-3 text-gray-500">Didn't check historical failure count</td>
-                  <td className="py-2.5 px-3 text-emerald-700 font-medium">Added "max 2 retries per method" rule</td>
-                  <td className="py-2.5 px-3 font-bold text-gray-900">Improved recovery from 61% → 82%</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-red-600">AI suggested UPI for ₹500 txn</td>
-                  <td className="py-2.5 px-3 text-gray-500">UPI friction higher for micro-amounts</td>
-                  <td className="py-2.5 px-3 text-emerald-700 font-medium">Added threshold: 1-Tap UPI for &gt;₹5,000</td>
-                  <td className="py-2.5 px-3 font-bold text-gray-900">Reduced customer friction by 34%</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-red-600">AI missed fraud signal (risk: 89)</td>
-                  <td className="py-2.5 px-3 text-gray-500">Fraud model trained on outdated dataset</td>
-                  <td className="py-2.5 px-3 text-emerald-700 font-medium">Retrained on 2026 Razorpay fraud dataset</td>
-                  <td className="py-2.5 px-3 font-bold text-gray-900">Blocked ₹1.8L fraudulent recoveries</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </details>
-
       </div>
     </div>
   );
