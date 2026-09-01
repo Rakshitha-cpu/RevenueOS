@@ -1,4 +1,5 @@
-﻿import hmac
+import os
+import hmac
 import hashlib
 import time
 from typing import Dict, Any, Tuple
@@ -15,8 +16,8 @@ class SecurityGuard:
     5. PCI-DSS Tokenization & SHA-256 Merkle Block Chaining
     """
 
-    def __init__(self, webhook_secret: str = "rzp_sec_live_904288192014"):
-        self.webhook_secret = webhook_secret
+    def __init__(self, webhook_secret: str = None):
+        self.webhook_secret = webhook_secret or os.getenv("RAZORPAY_WEBHOOK_SECRET", "rzp_sec_live_default_key")
         self._idempotency_store: Dict[str, Dict[str, Any]] = {}
         self.LINK_EXPIRY_SECONDS = 900  
 

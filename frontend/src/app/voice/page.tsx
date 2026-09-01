@@ -219,6 +219,8 @@ function VoiceRecoveryContent() {
     if (type === 'HUMAN_ESCALATE') handleTurnSubmit('Connect me to a senior human manager.');
   };
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://revenueos-backend.onrender.com';
+
   const processInspectTurn = async (text: string, currentHistory: MessageTurn[]) => {
     setCallState('ANALYZING');
     const t = text.toLowerCase().trim();
@@ -227,6 +229,44 @@ function VoiceRecoveryContent() {
     let sentiment = 'Attentive';
     let action = `Assisting customer with ${productName} (₹${productPrice.toLocaleString()})`;
     let chips = ['Send on WhatsApp', 'Send via SMS', 'Talk to Manager'];
+
+    // 1. Try calling the real FastAPI backend first
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2800);
+      const res = await fetch(`${API_BASE_URL}/api/v1/voice/intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          utterance: text,
+          session_id: `call_${orderId}`,
+          history: currentHistory.map(h => ({ role: h.role, text: h.text }))
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        const extracted = data.extracted_data;
+        if (extracted && extracted.ai_spoken_reply) {
+          reply = extracted.ai_spoken_reply;
+          intent = extracted.intent || 'VOICE_AGENT_RESOLVED';
+          action = extracted.policyguard_action || action;
+          if (extracted.quick_replies && extracted.quick_replies.length > 0) {
+            chips = extracted.quick_replies;
+          }
+          if (extracted.intent === 'WHATSAPP_LINK_ACTIVE' || extracted.intent === 'PRICE_RETENTION_ACCEPTED') {
+            setShowWhatsAppPopup(true);
+          }
+        }
+      }
+    } catch {
+      // Backend asleep or offline — seamlessly use enhanced local semantic classifier
+    }
+
+    // 2. If reply is still empty, use enhanced local semantic classification engine
+    if (!reply) {
 
     // ── 1. CANCELLATION CONFIRMATION / FINAL OPT-OUT ──────────────────────
     if (['no reason, just cancel', 'still cancel order', 'ordered by mistake', 'confirm cancel', 'yes cancel', 'just cancel', 'cancel'].includes(t) || /\b(just cancel|confirm cancel|ordered by mistake|no reason)\b/i.test(t)) {
@@ -241,7 +281,7 @@ function VoiceRecoveryContent() {
       chips = ['Done, Thank You', 'Re-order Product'];
     }
     // ── 2. INITIAL CANCELLATION REQUEST -> MOTIVE PROBE ───────────────────
-    else if (['i want to cancel', 'cancel order', 'cancel this order', "don't want", 'dont want'].includes(t) || /\b(cancel order|want to cancel|don't want|dont want|stop order|रद्द|ಕ್ಯಾನ್ಸಲ್)\b/i.test(t)) {
+    else if (['i want to cancel', 'cancel order', 'cancel this order', "don't want", 'dont want', 'rather not go ahead'].includes(t) || /\b(cancel|rather not|second thoughts|drop this|hold off|dont want|don't want|stop order|not interested|change my mind|रद्द|ಕ್ಯಾನ್ಸಲ್)\b/i.test(t)) {
       reply = selectedLang.code === 'kn-IN'
         ? `ಅರ್ಥಮಾಡಿಕೊಂಡೆ. #${orderId} ರದ್ದು ಮಾಡುವ ಮೊದಲು: ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆಯೇ, ವಿತರಣೆ ವಿಳಂಬವೇ, ಅಥವಾ ಬೇರೆ ಕಾರಣವೇ? ನಾನು ಸಹಾಯ ಮಾಡಬಲ್ಲೆ.`
         : selectedLang.code === 'hi-IN'
@@ -253,7 +293,7 @@ function VoiceRecoveryContent() {
       chips = ['Price is too high', 'Delivery delay', 'Ordered by mistake', 'No reason, just cancel'];
     }
     // ── 3. PRICE OBJECTION / DYNAMIC 5% DISCOUNT (SAVE232) ────────────────
-    else if (['price is too high', 'too expensive', 'price objection', `✓ accept ₹${discountPrice.toLocaleString()} offer`, 'accept offer', 'give discount'].includes(t) || t.includes('accept') || /\b(price|expensive|cost|discount|offer|ದುಬಾರಿ|महंगा|ज्यादा)\b/i.test(t)) {
+    else if (['price is too high', 'too expensive', 'price objection', `✓ accept ₹${discountPrice.toLocaleString()} offer`, 'accept offer', 'give discount'].includes(t) || t.includes('accept') || /\b(price|expensive|steep|cost|discount|offer|budget|too high|affordable|ದುಬಾರಿ|महंगा|ज्यादा)\b/i.test(t)) {
       if (t.includes('accept')) {
         reply = selectedLang.code === 'hi-IN'
           ? `शानदार! SAVE232 कोड से ₹${discountSavings.toLocaleString()} की छूट लागू हो गई। नई कुल रकम ₹${discountPrice.toLocaleString()} है। WhatsApp पर 1-Tap UPI लिंक भेज दिया गया है!`
@@ -385,6 +425,7 @@ function VoiceRecoveryContent() {
       intent = 'GENERAL_QUERY';
       chips = ['Send on WhatsApp', 'Send via SMS', 'I want to cancel', 'Talk to Manager'];
     }
+    } // End if (!reply) fallback
 
     setParsedIntent({ intent, sentiment, action });
 

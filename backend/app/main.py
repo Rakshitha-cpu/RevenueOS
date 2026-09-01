@@ -16,12 +16,20 @@ app = FastAPI(
 # Register custom exception handler
 app.add_exception_handler(RevenueOSBaseException, revenueos_exception_handler)
 
-# Allow frontend to call the backend API
+# Allow frontend to call the backend API with strict origin control
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://revenue-os-6cw6.vercel.app",
+    "https://revenueos.vercel.app",
+    "https://revenue-os.vercel.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to localhost:3000
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
