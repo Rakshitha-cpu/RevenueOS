@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { 
   CreditCard, AlertTriangle, Phone, ArrowRight, RefreshCw, ChevronRight, 
-  ExternalLink, ShieldCheck, Zap, BarChart3, RotateCcw, Shield, Activity, ShoppingCart
+  ExternalLink, ShieldCheck, Zap, BarChart3, RotateCcw, Shield, Activity, ShoppingCart,
+  Smartphone, QrCode, CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -118,6 +119,7 @@ const UPI_HISTORY = [
 export default function DemoPage() {
   const [stage, setStage] = useState<Stage>('catalog');
   const [product, setProduct] = useState(PRODUCTS[0]);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'gpay' | 'phonepe' | 'qr'>('card');
   const [paying, setPaying] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState(0);
   const [showUpi, setShowUpi] = useState(false);
@@ -129,7 +131,16 @@ export default function DemoPage() {
 
   const simulatePayment = () => {
     setPaying(true);
-    setTimeout(() => { setPaying(false); setStage('payment_failed'); }, 2200);
+    setTimeout(() => {
+      setPaying(false);
+      if (paymentMethod === 'card') {
+        // Card fails with gateway timeout to demonstrate RevenueOS recovery
+        setStage('payment_failed');
+      } else {
+        // UPI option can also fail or trigger recovery based on user intent
+        setStage('payment_failed');
+      }
+    }, 2200);
   };
 
   const startRecovery = () => {
@@ -151,6 +162,7 @@ export default function DemoPage() {
     setPaying(false);
     setRecoveryStep(0);
     setShowUpi(false);
+    setPaymentMethod('card');
   };
 
   const STEPS = [
@@ -267,10 +279,12 @@ export default function DemoPage() {
           </div>
         )}
 
-        {/* STAGE 3: CHECKOUT */}
+        {/* STAGE 3: CHECKOUT (WITH ACTIVE UPI & CARD OPTIONS) */}
         {stage === 'checkout' && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">Payment Verification</h2>
+            <h2 className="text-2xl font-bold text-white">Payment Method Selection</h2>
+            
+            {/* Delivery Address */}
             <div className="bg-slate-900 border border-gray-800 rounded-2xl p-4">
               <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-semibold">Delivery Address</p>
               <div className="flex items-start space-x-3">
@@ -281,39 +295,140 @@ export default function DemoPage() {
                 </div>
               </div>
             </div>
+
+            {/* Selectable Payment Options */}
             <div className="bg-slate-900 border border-gray-800 rounded-2xl p-4 space-y-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Selected Payment Method</p>
-              <div className="bg-blue-600/10 border-2 border-blue-500 rounded-xl p-3 flex items-center space-x-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Choose Payment Rail</p>
+
+              {/* Option 1: HDFC Credit Card */}
+              <button
+                onClick={() => setPaymentMethod('card')}
+                className={`w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${
+                  paymentMethod === 'card'
+                    ? 'bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/50'
+                    : 'bg-slate-800/40 border-gray-800 hover:border-gray-700'
+                }`}
+              >
                 <span className="text-2xl">🏦</span>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white">HDFC Bank Visa Credit Card</p>
-                  <p className="text-xs text-gray-400">•••• •••• •••• 4521 | Gateway Simulation</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-bold text-white">HDFC Bank Visa Credit Card</p>
+                    <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.2 rounded font-mono">
+                      Simulates Gateway Timeout (E_504)
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">•••• •••• •••• 4521 | Expires 09/27</p>
                 </div>
-                <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-white" />
+                <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                  paymentMethod === 'card' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'
+                }`}>
+                  {paymentMethod === 'card' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                 </div>
-              </div>
-              <div className="border border-gray-800 rounded-xl p-3 flex items-center space-x-3 opacity-40">
+              </button>
+
+              {/* Option 2: Google Pay UPI */}
+              <button
+                onClick={() => setPaymentMethod('gpay')}
+                className={`w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${
+                  paymentMethod === 'gpay'
+                    ? 'bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/50'
+                    : 'bg-slate-800/40 border-gray-800 hover:border-gray-700'
+                }`}
+              >
                 <span className="text-2xl">📱</span>
-                <p className="text-xs text-gray-400">UPI / Google Pay / PhonePe (Fast Rail)</p>
-              </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-bold text-white">Google Pay UPI (1-Tap Intent)</p>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono">
+                      Fast Rail
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">rajesh@okhdfcbank • Direct App Deep Link</p>
+                </div>
+                <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                  paymentMethod === 'gpay' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'
+                }`}>
+                  {paymentMethod === 'gpay' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                </div>
+              </button>
+
+              {/* Option 3: PhonePe UPI */}
+              <button
+                onClick={() => setPaymentMethod('phonepe')}
+                className={`w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${
+                  paymentMethod === 'phonepe'
+                    ? 'bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/50'
+                    : 'bg-slate-800/40 border-gray-800 hover:border-gray-700'
+                }`}
+              >
+                <span className="text-2xl">🟣</span>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-bold text-white">PhonePe UPI Intent</p>
+                    <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded font-mono">
+                      1-Tap Payout
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">98450XXXXX@ybl • Direct PhonePe App</p>
+                </div>
+                <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                  paymentMethod === 'phonepe' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'
+                }`}>
+                  {paymentMethod === 'phonepe' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                </div>
+              </button>
+
+              {/* Option 4: Dynamic Dynamic QR */}
+              <button
+                onClick={() => setPaymentMethod('qr')}
+                className={`w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${
+                  paymentMethod === 'qr'
+                    ? 'bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/50'
+                    : 'bg-slate-800/40 border-gray-800 hover:border-gray-700'
+                }`}
+              >
+                <span className="text-2xl">🔳</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white">Dynamic NPCI UPI QR Code</p>
+                  <p className="text-xs text-gray-400">Scan & Pay using any UPI app (Paytm, BHIM, CRED)</p>
+                </div>
+                <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                  paymentMethod === 'qr' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'
+                }`}>
+                  {paymentMethod === 'qr' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                </div>
+              </button>
             </div>
+
+            {/* Total and Checkout CTA */}
             <div className="bg-slate-900 border border-gray-800 rounded-2xl p-4 flex justify-between items-center">
               <div>
-                <p className="text-xs text-gray-400">Total Amount</p>
+                <p className="text-xs text-gray-400">Total Payable</p>
                 <p className="text-2xl font-black text-white">₹{product.price.toLocaleString()}</p>
               </div>
               <button onClick={simulatePayment} disabled={paying}
                 className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold rounded-xl transition flex items-center space-x-2 shadow-lg shadow-orange-500/20 text-sm">
-                {paying
-                  ? <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Simulating Gateway Timeout...</span></>
-                  : <><CreditCard size={16} /><span>Pay ₹{product.price.toLocaleString()}</span></>
-                }
+                {paying ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Processing {paymentMethod.toUpperCase()} Payment...</span>
+                  </>
+                ) : (
+                  <>
+                    {paymentMethod === 'card' && <CreditCard size={16} />}
+                    {(paymentMethod === 'gpay' || paymentMethod === 'phonepe') && <Smartphone size={16} />}
+                    {paymentMethod === 'qr' && <QrCode size={16} />}
+                    <span>Pay ₹{product.price.toLocaleString()}</span>
+                  </>
+                )}
               </button>
             </div>
+
             {paying && (
               <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 text-center">
-                <p className="text-xs text-amber-300 animate-pulse font-mono">⚠️ Simulating HDFC Card Gateway Timeout (E_504_TIMEOUT)...</p>
+                <p className="text-xs text-amber-300 animate-pulse font-mono">
+                  ⚠️ Simulating Bank Gateway Failure (E_504_GATEWAY_TIMEOUT) on {paymentMethod.toUpperCase()} rail...
+                </p>
               </div>
             )}
           </div>
@@ -326,7 +441,9 @@ export default function DemoPage() {
             <div className="bg-red-950/40 border-2 border-red-500/50 rounded-2xl p-6 text-center">
               <div className="text-5xl mb-2">❌</div>
               <h2 className="text-2xl font-black text-red-400 mb-1">Payment Failed (E_504_GATEWAY_TIMEOUT)</h2>
-              <p className="text-gray-300 text-xs">HDFC Bank card gateway timed out. No amount was debited from customer.</p>
+              <p className="text-gray-300 text-xs">
+                Bank card gateway timed out. No amount was debited from customer.
+              </p>
               <div className="bg-red-950/60 rounded-xl p-2.5 inline-block mt-3 border border-red-800/40">
                 <p className="text-xs text-red-300 font-mono">Target SKU: {product.name} (₹{product.price.toLocaleString()})</p>
               </div>
