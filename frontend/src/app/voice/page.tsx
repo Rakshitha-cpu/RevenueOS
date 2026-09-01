@@ -362,7 +362,7 @@ function VoiceRecoveryContent() {
       intent = 'IDENTITY_CONFIRMED';
       sentiment = 'Cooperative';
       action = `Identity verified, payment recovery link ready for ${productName} (₹${productPrice.toLocaleString()})`;
-      chips = ['Send on WhatsApp', 'Send via SMS', 'I want to cancel', 'Check Refund'];
+      chips = ['Send on WhatsApp', 'Price is too high', 'I want to cancel', 'Check Refund'];
     }
     // ── 8. DOUBLE-DEBIT / REFUND STATUS CHECK ─────────────────────────────
     else if (['check refund', 'refund check', 'refund', 'money was deducted', 'double debit'].includes(t) || /\b(refund|deducted|money cut|cut money|double debit|ರಿಫಂಡ್|ರದ್ದು|रिफंड)\b/i.test(t)) {
