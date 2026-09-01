@@ -245,7 +245,7 @@ function VoiceRecoveryContent() {
           sku: productName,
           amount: productPrice,
           failure_code: failureReason,
-          demo_mode: true,
+          demo_mode: searchParams.get('demo') === 'true' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
           history: currentHistory.map(h => ({ role: h.role, text: h.text }))
         }),
         signal: controller.signal
