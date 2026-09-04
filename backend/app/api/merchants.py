@@ -51,8 +51,15 @@ def get_merchant_config(merchant_id: str):
         config = MERCHANT_DB["merchant_default"]
     return config
 
+from app.core.auth import get_current_user
+from fastapi import Depends
+
 @router.put("/{merchant_id}")
-def update_merchant_config(merchant_id: str, payload: MerchantConfigUpdate):
+def update_merchant_config(
+    merchant_id: str, 
+    payload: MerchantConfigUpdate,
+    current_user: dict = Depends(get_current_user)
+):
     """
     Dynamically updates policy thresholds (e.g. discount cap, DND enforcement) for a merchant tenant.
     """

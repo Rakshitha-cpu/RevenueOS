@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-qa-and-compliance:
-    name: Backend QA, PolicyGuard Verification & Alembic Migrations
+    name: Backend QA, PolicyGuard Verification, Auth Guards & Alembic Migrations
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,9 +27,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Execute Enterprise Compliance, Risk & API Test Suite
+    - name: Execute Enterprise 35-Test Compliance, Policy, Risk, Refund & Auth Suite
       run: |
-        python -m unittest tests/test_compliance_guard.py tests/test_policy_engine.py tests/test_risk_engine.py tests/test_all_endpoints.py
+        python -m unittest tests/test_compliance_guard.py tests/test_policy_engine.py tests/test_risk_engine.py tests/test_refund_engine.py tests/test_all_endpoints.py
 
   frontend-qa-and-build:
     name: Frontend Type-Check & Production Build Validation

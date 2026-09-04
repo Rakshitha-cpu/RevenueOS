@@ -1,8 +1,12 @@
 import os
 from typing import Dict, Any, Optional
-from pydantic_settings import BaseSettings
 from pydantic import Field
 from dotenv import load_dotenv
+
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    from pydantic import BaseModel as BaseSettings
 
 load_dotenv()
 
@@ -12,25 +16,25 @@ class Settings(BaseSettings):
     Single Source of Truth for all environments (Dev, Staging, Prod).
     """
     APP_NAME: str = "RevenueOS"
-    ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
-    DEBUG: bool = Field(default=False, env="DEBUG")
+    ENVIRONMENT: str = Field(default="development")
+    DEBUG: bool = Field(default=False)
     
     # Database & Redis
-    DATABASE_URL: str = Field(default="sqlite:///./revenueos.db", env="DATABASE_URL")
-    REDIS_URL: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+    DATABASE_URL: str = Field(default="sqlite:///./revenueos.db")
+    REDIS_URL: str = Field(default="redis://localhost:6379/0")
     
     # Security & API Secrets
-    RAZORPAY_WEBHOOK_SECRET: str = Field(default="live_secret_revenueos_wh_90428819", env="RAZORPAY_WEBHOOK_SECRET")
-    JWT_SECRET_KEY: str = Field(default="supersecretjwtkey_revenueos_prod_2026", env="JWT_SECRET_KEY")
+    RAZORPAY_WEBHOOK_SECRET: str = Field(default="live_secret_revenueos_wh_90428819")
+    JWT_SECRET_KEY: str = Field(default="supersecretjwtkey_revenueos_prod_2026")
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 1440  # 24 hours
     
     # LLM Inference Keys
-    ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
-    GEMINI_API_KEY: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
+    ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
+    GEMINI_API_KEY: Optional[str] = Field(default=None)
     
     # Deterministic Compliance & Policy Rules
-    REVENUEOS_DEMO_MODE: bool = Field(default=False, env="REVENUEOS_DEMO_MODE")
+    REVENUEOS_DEMO_MODE: bool = Field(default=False)
     MAX_DISCOUNT_PERCENT: float = 5.0
     LOYALTY_VOUCHER_CODE: str = "SAVE232"
     MAX_RISK_SCORE_CEILING: float = 85.0
@@ -41,13 +45,25 @@ class Settings(BaseSettings):
     RETRY_COOLDOWN_MINUTES: int = 5
     
     # Bank Gateway Failure Rates
-    HDFC_FAIL_RATE: float = Field(default=0.85, env="HDFC_FAIL_RATE")
-    SBI_FAIL_RATE: float = Field(default=0.45, env="SBI_FAIL_RATE")
-    ICICI_FAIL_RATE: float = Field(default=0.05, env="ICICI_FAIL_RATE")
+    HDFC_FAIL_RATE: float = Field(default=0.85)
+    SBI_FAIL_RATE: float = Field(default=0.45)
+    ICICI_FAIL_RATE: float = Field(default=0.05)
 
-    class Config:
-        case_sensitive = True
-        extra = "ignore"
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Override fields from OS environment if present
+        for key in self.__annotations__:
+            env_val = os.getenv(key)
+            if env_val is not None:
+                orig_type = self.__annotations__[key]
+                if orig_type == bool:
+                    setattr(self, key, env_val.lower() in ("true", "1", "yes"))
+                elif orig_type == float:
+                    setattr(self, key, float(env_val))
+                elif orig_type == int:
+                    setattr(self, key, int(env_val))
+                else:
+                    setattr(self, key, env_val)
 
 settings = Settings()
 

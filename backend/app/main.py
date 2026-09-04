@@ -43,8 +43,9 @@ app.include_router(audit.router, prefix="/api/v1/audit", tags=["Cryptographic Au
 app.include_router(telephony.router, prefix="/api/v1/telephony", tags=["Telephony & PSTN Gateway"])
 app.include_router(merchants.router, prefix="/api/v1/merchants", tags=["Multi-Tenant Merchant Policy Engine"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["External Integrations"])
-app.include_router(metrics.router, prefix="/api/v1/observability", tags=["Observability & Metrics"])
 app.include_router(refunds.router, prefix="/api/v1/refunds", tags=["Instant Refunds & Compensation"])
+from app.api import auth
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication & JWT"])
 
 @app.get("/")
 def read_root():
