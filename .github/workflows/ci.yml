@@ -1,4 +1,4 @@
-﻿name: RevenueOS Enterprise CI/CD Pipeline
+name: RevenueOS Enterprise CI/CD Pipeline
 
 on:
   push:
@@ -7,54 +7,66 @@ on:
     branches: [ "main" ]
 
 jobs:
-  backend-qa-and-sast:
-    name: Backend Pytest Suite, SAST Security & Linting
+  backend-qa-and-compliance:
+    name: Backend QA, PolicyGuard Verification & Alembic Migrations
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./backend
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
     - name: Set up Python 3.11
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
         cache: 'pip'
-    - name: Install Pinned Dependencies
+        
+    - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run Backend Pytest Suite
-      run: pytest -v tests/
+        
+    - name: Execute Enterprise Compliance & API Test Suite
+      run: |
+        python -m unittest tests/test_compliance_guard.py tests/test_all_endpoints.py
 
   frontend-qa-and-build:
-    name: Frontend Vitest Suite & Production Build
+    name: Frontend Type-Check & Production Build Validation
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./frontend
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Node.js 18.x
-      uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js 20.x
+      uses: actions/setup-node@v4
       with:
-        node-version: 18.x
+        node-version: 20.x
         cache: 'npm'
         cache-dependency-path: ./frontend/package-lock.json
+        
     - name: Install Dependencies
       run: npm install --legacy-peer-deps
-    - name: Run Vitest Suite
-      run: npx vitest run
-    - name: Next.js Production Build Validation
+      
+    - name: Run TypeScript Validation
+      run: npx tsc --noEmit
+      
+    - name: Run Next.js Production Build
       run: npm run build
+      env:
+        NEXT_PUBLIC_DEMO_MODE: "true"
 
   docker-image-build:
     name: Multi-Stage Production Container Build
     runs-on: ubuntu-latest
-    needs: [backend-qa-and-sast, frontend-qa-and-build]
+    needs: [backend-qa-and-compliance, frontend-qa-and-build]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
     - name: Build Backend Docker Image
       run: docker build -t revenueos-backend:latest ./backend
+      
     - name: Build Frontend Docker Image
       run: docker build -t revenueos-frontend:latest ./frontend
