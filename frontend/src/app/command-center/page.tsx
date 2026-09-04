@@ -24,9 +24,18 @@ export default function AICommandCenter() {
     qrSecondsRemaining,
     qrStatus,
     runScenario,
+    replayCurrentScenario,
     simulateQRPayment,
+    resetQR,
     decrementQRTimer
   } = useRevenueStore();
+
+  // Auto-run default scenario on initial page load if not started
+  useEffect(() => {
+    if (visibleEventsCount === 0 && !isRunning) {
+      runScenario('BANK_OUTAGE');
+    }
+  }, [visibleEventsCount, isRunning, runScenario]);
 
   // QR Countdown interval
   useEffect(() => {
@@ -55,15 +64,14 @@ export default function AICommandCenter() {
         </div>
 
         {/* Live Scenario Selector / Test Playground */}
-        <div className="flex items-center space-x-2 bg-slate-900/90 border border-gray-800 p-1.5 rounded-lg font-sans text-xs">
+        <div className="flex items-center flex-wrap gap-2 bg-slate-900/90 border border-gray-800 p-1.5 rounded-lg font-sans text-xs">
           <span className="text-gray-400 font-semibold px-2 flex items-center">
             <Sparkles size={14} className="mr-1 text-amber-400" />
             Scenarios:
           </span>
           <button
             onClick={() => runScenario('BANK_OUTAGE')}
-            disabled={isRunning}
-            className={`px-3 py-1.5 rounded-md transition font-medium ${
+            className={`px-3 py-1.5 rounded-md transition font-medium cursor-pointer ${
               activeScenario === 'BANK_OUTAGE' 
                 ? 'bg-blue-600 text-white shadow-md' 
                 : 'text-gray-400 hover:text-white hover:bg-slate-800'
@@ -73,8 +81,7 @@ export default function AICommandCenter() {
           </button>
           <button
             onClick={() => runScenario('VIP_RECOVERY')}
-            disabled={isRunning}
-            className={`px-3 py-1.5 rounded-md transition font-medium ${
+            className={`px-3 py-1.5 rounded-md transition font-medium cursor-pointer ${
               activeScenario === 'VIP_RECOVERY' 
                 ? 'bg-purple-600 text-white shadow-md' 
                 : 'text-gray-400 hover:text-white hover:bg-slate-800'
@@ -84,8 +91,7 @@ export default function AICommandCenter() {
           </button>
           <button
             onClick={() => runScenario('FRAUD_BLOCK')}
-            disabled={isRunning}
-            className={`px-3 py-1.5 rounded-md transition font-medium ${
+            className={`px-3 py-1.5 rounded-md transition font-medium cursor-pointer ${
               activeScenario === 'FRAUD_BLOCK' 
                 ? 'bg-red-600 text-white shadow-md' 
                 : 'text-gray-400 hover:text-white hover:bg-slate-800'
@@ -124,18 +130,28 @@ export default function AICommandCenter() {
         {/* Left 2 Cols: Live Execution Trace Terminal */}
         <div className="lg:col-span-2 bg-black rounded-xl border border-gray-800 p-6 shadow-2xl min-h-[460px] flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-850">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-850 gap-2 flex-wrap">
               <span className="text-xs text-gray-400 uppercase tracking-wider font-sans flex items-center">
                 <Terminal size={14} className="mr-2 text-blue-400" />
                 Autonomous Multi-Agent Pipeline Trace
               </span>
-              <span className={`text-xs px-2.5 py-0.5 rounded font-sans border ${
-                activeScenario === 'FRAUD_BLOCK' 
-                  ? 'text-red-400 bg-red-950/60 border-red-800/50' 
-                  : 'text-emerald-400 bg-emerald-950/60 border-emerald-800/50'
-              }`}>
-                {activeScenario === 'FRAUD_BLOCK' ? '🚨 Policy Guard Escalated' : '✓ Policy Guard Active'}
-              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={replayCurrentScenario}
+                  className="flex items-center text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white rounded border border-gray-700 transition cursor-pointer font-sans"
+                  title="Replay this scenario trace"
+                >
+                  <Play size={12} className="mr-1.5 text-blue-400 fill-blue-400" />
+                  {isRunning ? 'Replaying...' : 'Replay Trace'}
+                </button>
+                <span className={`text-xs px-2.5 py-0.5 rounded font-sans border ${
+                  activeScenario === 'FRAUD_BLOCK' 
+                    ? 'text-red-400 bg-red-950/60 border-red-800/50' 
+                    : 'text-emerald-400 bg-emerald-950/60 border-emerald-800/50'
+                }`}>
+                  {activeScenario === 'FRAUD_BLOCK' ? '🚨 Policy Guard Escalated' : '✓ Policy Guard Active'}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -166,8 +182,8 @@ export default function AICommandCenter() {
               {isRunning && visibleEventsCount < events.length && (
                 <div className="flex items-start space-x-3.5 animate-pulse mt-4">
                   <div className="text-gray-700 text-xs mt-1 w-16 shrink-0">--:--:--</div>
-                  <div className="p-1.5 shrink-0"><div className="w-3.5 h-3.5 rounded-full bg-gray-800"></div></div>
-                  <div className="flex-1 text-gray-700 text-xs mt-0.5">awaiting agent deliberation...</div>
+                  <div className="p-1.5 shrink-0"><div className="w-3.5 h-3.5 rounded-full bg-blue-500 animate-ping"></div></div>
+                  <div className="flex-1 text-gray-500 text-xs mt-0.5">processing next autonomous guardrail check...</div>
                 </div>
               )}
 
@@ -203,9 +219,11 @@ export default function AICommandCenter() {
               <span className={`text-xs px-2 py-0.5 rounded-full font-mono border ${
                 qrStatus === 'PAID' 
                   ? 'bg-emerald-950 text-emerald-400 border-emerald-800' 
+                  : qrStatus === 'EXPIRED'
+                  ? 'bg-rose-950 text-rose-400 border-rose-800'
                   : 'bg-amber-950 text-amber-400 border-amber-800'
               }`}>
-                {qrStatus === 'PAID' ? '✓ RECOVERED' : `Expires: ${formatTime(qrSecondsRemaining)}`}
+                {qrStatus === 'PAID' ? '✓ RECOVERED' : qrStatus === 'EXPIRED' ? 'EXPIRED' : `Expires: ${formatTime(qrSecondsRemaining)}`}
               </span>
             </div>
 
@@ -216,9 +234,10 @@ export default function AICommandCenter() {
             <div className="bg-black/70 rounded-lg p-4 border border-gray-800 flex flex-col items-center justify-center">
               <div className="w-36 h-36 bg-white rounded-lg p-2 flex items-center justify-center shadow-inner relative">
                 {qrStatus === 'PAID' ? (
-                  <div className="absolute inset-0 bg-emerald-500/90 rounded-lg flex flex-col items-center justify-center text-white">
-                    <CheckCircle size={36} className="mb-1" />
+                  <div className="absolute inset-0 bg-emerald-600 rounded-lg flex flex-col items-center justify-center text-white p-2 text-center animate-in zoom-in-90 duration-200">
+                    <CheckCircle size={36} className="mb-1 text-white" />
                     <span className="font-bold text-xs">PAID via GPay</span>
+                    <span className="text-[10px] text-emerald-100 mt-0.5 font-mono">₹4,650 Recovered</span>
                   </div>
                 ) : (
                   <div className="w-full h-full border-2 border-dashed border-slate-900 flex flex-col items-center justify-center text-slate-800 text-center text-[10px] font-mono">
@@ -230,12 +249,19 @@ export default function AICommandCenter() {
 
               <div className="w-full mt-3 flex justify-between items-center text-xs">
                 <span className="text-gray-400 font-mono">GPay / PhonePe / Paytm</span>
-                {qrStatus !== 'PAID' && (
+                {qrStatus === 'ACTIVE' ? (
                   <button
                     onClick={simulateQRPayment}
-                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium transition"
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium transition cursor-pointer"
                   >
                     Simulate Scan
+                  </button>
+                ) : (
+                  <button
+                    onClick={resetQR}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded text-[11px] font-medium transition cursor-pointer border border-gray-700"
+                  >
+                    Reset QR
                   </button>
                 )}
               </div>
