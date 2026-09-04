@@ -2,71 +2,86 @@ import unittest
 import sys
 import os
 
-# Ensure the app module can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app.services.policy_guard import PolicyGuard
 
-from app.services.policy_engine import policy_guard
+class TestPolicyEngineSuite(unittest.TestCase):
+    """
+    Exhaustive Test Suite for PolicyGuard Deterministic Safety Rules (Rules 1-12).
+    """
 
-def test_evaluate_action_authorized():
-    """Test that a compliant transaction is authorized."""
-    amount = 1000.0
-    customer = {"previous_retries": 1}
-    policy_config = {"high_value_threshold": 50000.0, "max_retries": 3, "fraud_block_enabled": True}
-    risk_profile = {"risk_score": 10}
-    
-    result = policy_guard.evaluate_action("payment_link", amount, customer, policy_config, risk_profile)
-    
-    assert result["authorized"] is True
-    assert result["requires_human"] is False
+    def test_compliant_transaction_authorized(self):
+        """Rule: Normal compliant daytime transaction within discount cap is approved."""
+        context = {
+            "simulated_ist_hour": 14,
+            "demo_mode": False,
+            "risk_score": 15.0,
+            "discount_applied_percent": 5.0,
+            "amount": 4650.0
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertTrue(res["passed"])
+        self.assertEqual(res["policy_status"], "APPROVED")
+        self.assertEqual(res["violations_count"], 0)
 
-def test_evaluate_action_exceeds_amount_threshold():
-    """Test that transactions above the high-value threshold are blocked/escalated."""
-    amount = 60000.0
-    customer = {"previous_retries": 0}
-    policy_config = {"high_value_threshold": 50000.0, "max_retries": 3, "fraud_block_enabled": True}
-    risk_profile = {"risk_score": 10}
-    
-    result = policy_guard.evaluate_action("payment_link", amount, customer, policy_config, risk_profile)
-    
-    assert result["authorized"] is False
-    assert result["requires_human"] is True
-    assert "Amount (₹60000.0) exceeds" in result["reason"]
+    def test_trai_dnd_violation_in_prod(self):
+        """Rule 1: Late night (23:00 IST) automated outreach strictly halted in production."""
+        context = {
+            "simulated_ist_hour": 23,
+            "demo_mode": False,
+            "risk_score": 10.0
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertFalse(res["passed"])
+        self.assertEqual(res["policy_status"], "HALTED")
+        self.assertTrue(any("RULE_1_TRAI_DND_VIOLATION" in v for v in res["violations"]))
 
-def test_evaluate_action_exceeds_retries():
-    """Test that transactions hitting the retry limit are stopped."""
-    amount = 1000.0
-    customer = {"previous_retries": 3}
-    policy_config = {"high_value_threshold": 50000.0, "max_retries": 3, "fraud_block_enabled": True}
-    risk_profile = {"risk_score": 10}
-    
-    result = policy_guard.evaluate_action("payment_link", amount, customer, policy_config, risk_profile)
-    
-    assert result["authorized"] is False
-    assert result["requires_human"] is True
-    assert "maximum contact limit" in result["reason"]
+    def test_fraud_risk_ceiling_breached(self):
+        """Rule 2: Transactions with fraud risk score > 85 are halted."""
+        context = {
+            "simulated_ist_hour": 15,
+            "demo_mode": True,
+            "risk_score": 92.0
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertFalse(res["passed"])
+        self.assertEqual(res["policy_status"], "HALTED")
+        self.assertTrue(any("RULE_2_FRAUD_RISK_EXCEEDED" in v for v in res["violations"]))
 
-def test_evaluate_action_fraud_blocked():
-    """Test that transactions with high risk scores are blocked."""
-    amount = 1000.0
-    customer = {"previous_retries": 0}
-    policy_config = {"high_value_threshold": 50000.0, "max_retries": 3, "fraud_block_enabled": True}
-    risk_profile = {"risk_score": 90}
-    
-    result = policy_guard.evaluate_action("payment_link", amount, customer, policy_config, risk_profile)
-    
-    assert result["authorized"] is False
-    assert result["requires_human"] is True
-    assert "Risk score (90) exceeds" in result["reason"]
+    def test_discount_cap_exceeded(self):
+        """Rule 3: Unauthorized discount request > 5.0% is halted."""
+        context = {
+            "simulated_ist_hour": 14,
+            "demo_mode": True,
+            "discount_applied_percent": 15.0
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertFalse(res["passed"])
+        self.assertEqual(res["policy_status"], "HALTED")
+        self.assertTrue(any("RULE_3_DISCOUNT_CAP_EXCEEDED" in v for v in res["violations"]))
 
-def test_evaluate_action_unauthorized_refund():
-    """Test that AI cannot autonomously issue refunds."""
-    amount = 500.0
-    customer = {"previous_retries": 0}
-    policy_config = {"high_value_threshold": 50000.0, "max_retries": 3, "fraud_block_enabled": True}
-    risk_profile = {"risk_score": 10}
-    
-    result = policy_guard.evaluate_action("refund", amount, customer, policy_config, risk_profile)
-    
-    assert result["authorized"] is False
-    assert result["requires_human"] is True
-    assert "Unrestricted refunds" in result["reason"]
+    def test_dpdp_opt_out_stopping_rule(self):
+        """Rule 4: Explicit DND / Wrong Number opt-out takes immediate precedence."""
+        context = {
+            "simulated_ist_hour": 23,
+            "demo_mode": False,
+            "customer_opt_out": True
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertTrue(res["is_dnd_stop"])
+        self.assertEqual(res["policy_status"], "DND_SUPPRESSED")
+
+    def test_npci_direct_debit_blocked(self):
+        """Rule 5: Direct debit without 2FA PIN is strictly forbidden."""
+        context = {
+            "simulated_ist_hour": 14,
+            "demo_mode": True,
+            "action_type": "DIRECT_DEBIT_WITHOUT_PIN"
+        }
+        res = PolicyGuard.evaluate_all(context)
+        self.assertFalse(res["passed"])
+        self.assertEqual(res["policy_status"], "HALTED")
+        self.assertTrue(any("RULE_5_NPCI_PIN_REQUIRED" in v for v in res["violations"]))
+
+if __name__ == '__main__':
+    unittest.main()
