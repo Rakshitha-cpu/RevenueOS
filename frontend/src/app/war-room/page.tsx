@@ -20,7 +20,7 @@ export default function WarRoomDashboard() {
     <div className="font-sans max-w-7xl mx-auto">
       
       {/* Dashboard Top Header */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <div className="flex items-center space-x-3 mb-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Revenue War Room</h1>
@@ -56,6 +56,59 @@ export default function WarRoomDashboard() {
           </Link>
         </div>
       </header>
+
+      {/* Real-time Banking Network Rail Monitor Banner */}
+      <div className="bg-slate-900 text-white rounded-2xl p-4 mb-6 shadow-lg border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+            <AlertTriangle size={18} />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Banking Network Rails Health</h3>
+              <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-mono font-semibold border border-red-500/30 animate-pulse">
+                1 Outage Detected
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">Automated circuit-breaker active — rerouting traffic to healthy UPI rails</p>
+          </div>
+        </div>
+
+        {/* Bank Rails Status Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto font-mono text-[11px]">
+          <div className="bg-red-950/60 border border-red-800/60 rounded-xl px-3 py-1.5 flex flex-col">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-red-300">HDFC Netbanking</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
+            </div>
+            <span className="text-[10px] text-red-400">98% Timeout (Degraded)</span>
+          </div>
+
+          <div className="bg-emerald-950/60 border border-emerald-800/60 rounded-xl px-3 py-1.5 flex flex-col">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-300">ICICI UPI Rail</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <span className="text-[10px] text-emerald-400">99.9% (Operational)</span>
+          </div>
+
+          <div className="bg-emerald-950/60 border border-emerald-800/60 rounded-xl px-3 py-1.5 flex flex-col">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-300">SBI UPI Rail</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <span className="text-[10px] text-emerald-400">99.8% (Operational)</span>
+          </div>
+
+          <div className="bg-emerald-950/60 border border-emerald-800/60 rounded-xl px-3 py-1.5 flex flex-col">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-300">Axis Netbanking</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <span className="text-[10px] text-emerald-400">99.4% (Operational)</span>
+          </div>
+        </div>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
