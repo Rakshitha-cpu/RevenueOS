@@ -1,4 +1,4 @@
-﻿# REVENUEOS: MASTER PRODUCT & TECHNICAL SPECIFICATION DOCUMENT
+# REVENUEOS: MASTER PRODUCT & TECHNICAL SPECIFICATION DOCUMENT
 **Autonomous Payment Recovery & Financial Decision Engine**  
 *Track: Autonomous AI Agents & Financial Workflow Automation (Razorpay AI Buildathon 2026)*
 
@@ -115,8 +115,9 @@ If $\text{Expected Net Yield} \le 0$ or fraud probability is elevated, RevenueOS
 
 ## 8. PRODUCTION DEPLOYMENT METADATA
 
-* **Frontend Live URL (Vercel):** `https://revenue-os-ruddy-two.vercel.app`
-* **Backend Live API (Render):** `https://revenueos-backend.onrender.com`
-* **Interactive API Documentation:** `https://revenueos-backend.onrender.com/docs`
+* **Frontend Live URL (Vercel):** `https://revenue-os-6cw6.vercel.app`
+* **Backend Live API (Render):** `https://revenueos-o2wd.onrender.com`
+* **Interactive API Documentation:** `https://revenueos-o2wd.onrender.com/docs`
+* **Audit Ledger Verification Endpoint:** `https://revenueos-o2wd.onrender.com/api/v1/audit/verify`
 * **Public GitHub Repository:** `https://github.com/Rakshitha-cpu/RevenueOS`
 * **Branch:** `main` (Verified, 100% passing build status).

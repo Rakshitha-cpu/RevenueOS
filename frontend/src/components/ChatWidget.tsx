@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send, Bot, Sparkles } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://revenueos-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://revenueos-o2wd.onrender.com';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
