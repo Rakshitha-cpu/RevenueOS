@@ -41,19 +41,37 @@
 
 ---
 
-### 3. Revenue War Room & Banking Network Rails Health (`/war-room`)
+### 3. Multi-Turn Vernacular Voice Telecaller (`/voice`)
+![Voice Engine](docs/assets/voice_engine.png)
+*Real-time conversational telecalling in 6 Indian languages with sub-400ms latency, motive probing, and live telecaller audit.*
+
+---
+
+### 4. Revenue War Room & Banking Network Rails Health (`/war-room`)
 ![Revenue War Room](docs/assets/war_room.png)
 *Live monitor tracking HDFC Netbanking degradation (98% timeout) vs operational ICICI/SBI UPI rails, backed by HMAC-SHA256 telemetry.*
 
 ---
 
-### 4. Customer Context & Economic Explainability (`/customer`)
+### 5. Customer Context & Economic Explainability (`/customer`)
 ![Customer Diagnosis Dossier](docs/assets/customer_dossier.png)
 *Micro-level customer signal intelligence: VIP LTV ₹92k scoring, TRAI DND opt-out compliance, and Expected Net Yield optimization.*
 
 ---
 
-### 5. Recovery Performance & 50-Scenario Audit Ledger (`/batch-evaluation`)
+### 6. AI Command Center & Multi-Agent Trace (`/command-center`)
+![AI Command Center](docs/assets/command_center.png)
+*Autonomous multi-agent deliberation trace, Rule 4 fraud interception halt, dynamic UPI intent QR generation, and smart-timing ML predictor.*
+
+---
+
+### 7. Autonomous Instant Refund & Retention Engine (`/refunds`)
+![Instant Refunds](docs/assets/instant_refunds.png)
+*Eliminates the 5–7 day waiting period: automated T+0 instant reversals in 2.18 seconds across NPCI rails with live bank UTR reference numbers.*
+
+---
+
+### 8. Recovery Performance & 50-Scenario Audit Ledger (`/batch-evaluation`)
 ![Recovery Analytics & Audit Ledger](docs/assets/benchmark_analytics.png)
 *Empirical evaluation across 50 synthetic checkout failures: 86.0% recovery rate, T+0 2.18s reversals, and 100% PolicyGuard compliance.*
 
