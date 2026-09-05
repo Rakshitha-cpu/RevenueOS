@@ -1,18 +1,10 @@
-services:
+﻿services:
   - type: web
     name: revenueos-backend
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: REVENUEOS_DEMO_MODE
-        value: "true"
-      - key: RAZORPAY_WEBHOOK_SECRET
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
+        value: 3.11.9

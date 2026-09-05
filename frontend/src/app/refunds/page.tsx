@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import { 
-  RotateCcw, Zap, Gift, ShieldCheck, Clock, CheckCircle2, 
-  ArrowRight, AlertCircle, Sparkles, Receipt, RefreshCw, Smartphone 
+  RotateCcw, Zap, Gift, ShieldCheck, Clock, CheckCircle2, CheckCircle, 
+  ArrowRight, AlertCircle, AlertTriangle, Sparkles, Receipt, RefreshCw, Smartphone, ExternalLink, Lock, Shield 
 } from 'lucide-react';
+import { formatINR } from '@/utils/formatters';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://revenueos-backend.onrender.com";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function InstantRefundsPage() {
   const [amount, setAmount] = useState<number>(4650);
